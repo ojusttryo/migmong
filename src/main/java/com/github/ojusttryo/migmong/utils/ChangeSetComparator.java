@@ -17,8 +17,8 @@ public class ChangeSetComparator implements Comparator<Method>, Serializable
     @Override
     public int compare(Method left, Method right)
     {
-        ChangeSet c1 = left.getAnnotation(ChangeSet.class);
-        ChangeSet c2 = right.getAnnotation(ChangeSet.class);
-        return c1.order().compareTo(c2.order());
+        ChangeSet leftChangeSet = left.getAnnotation(ChangeSet.class);
+        ChangeSet rightChangeSet = right.getAnnotation(ChangeSet.class);
+        return (leftChangeSet.id() - rightChangeSet.id());
     }
 }

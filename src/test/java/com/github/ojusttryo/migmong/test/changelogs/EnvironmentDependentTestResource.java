@@ -6,10 +6,10 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import com.github.ojusttryo.migmong.changeset.ChangeLog;
 import com.github.ojusttryo.migmong.changeset.ChangeSet;
 
-@ChangeLog(order = "3")
+@ChangeLog
 public class EnvironmentDependentTestResource
 {
-    @ChangeSet(author = "testuser", id = "Envtest1", order = "01")
+    @ChangeSet(id = 1)
     public void testChangeSet7WithEnvironment(MongoTemplate template, Environment env)
     {
         System.out.println("invoked Envtest1 with mongotemplate=" + template.toString() + " and Environment " + env);

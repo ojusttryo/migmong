@@ -2,10 +2,8 @@ package com.github.ojusttryo.migmong.utils;
 
 import static java.util.Arrays.asList;
 
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -13,13 +11,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.reflections.Reflections;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 
 import com.github.ojusttryo.migmong.changeset.ChangeLog;
 import com.github.ojusttryo.migmong.changeset.ChangeSet;
+import com.github.ojusttryo.migmong.changeset.Migration;
 import com.github.ojusttryo.migmong.exception.MigMongChangeSetException;
 import com.github.ojusttryo.migmong.changeset.ChangeEntry;
+import com.github.ojusttryo.migmong.exception.MigMongException;
 
 /**
  * Utilities to deal with reflections and annotations
@@ -61,7 +60,6 @@ public class ChangeService
 
             return new ChangeEntry(
                     annotation.id(),
-                    annotation.author(),
                     new Date(),
                     changesetMethod.getDeclaringClass().getName(),
                     changesetMethod.getName());
@@ -73,27 +71,23 @@ public class ChangeService
     }
 
 
-    public List<Class<?>> fetchChangeLogs()
+    public List<Migration> fetchMigrations() throws MigMongException
     {
         Reflections reflections = new Reflections(changeLogsBasePackage);
-        Set<Class<?>> changeLogs = reflections.getTypesAnnotatedWith(
-                ChangeLog.class); // TODO remove dependency, do own method
-        List<Class<?>> filteredChangeLogs = (List<Class<?>>)filterByActiveProfiles(changeLogs);
-
-        Collections.sort(filteredChangeLogs, new ChangeLogComparator());
-
-        return filteredChangeLogs;
+        List<Class<?>> changeLogs = new ArrayList<>(reflections.getTypesAnnotatedWith(ChangeLog.class));
+        List<Migration> migrations = new ArrayList<>();
+        for (Class<?> changeLogClass : changeLogs)
+            migrations.add(new Migration(changeLogClass));
+        migrations.sort(new MigrationComparator());
+        return migrations;
     }
 
 
     public List<Method> fetchChangeSets(final Class<?> type) throws MigMongChangeSetException
     {
         final List<Method> changeSets = filterChangeSetAnnotation(asList(type.getDeclaredMethods()));
-        final List<Method> filteredChangeSets = (List<Method>)filterByActiveProfiles(changeSets);
-
-        Collections.sort(filteredChangeSets, new ChangeSetComparator());
-
-        return filteredChangeSets;
+        Collections.sort(changeSets, new ChangeSetComparator());
+        return changeSets;
     }
 
 
@@ -107,60 +101,22 @@ public class ChangeService
     }
 
 
-    private List<?> filterByActiveProfiles(Collection<? extends AnnotatedElement> annotated)
-    {
-        List<AnnotatedElement> filtered = new ArrayList<>();
-        for (AnnotatedElement element : annotated)
-        {
-            if (matchesActiveSpringProfile(element))
-                filtered.add(element);
-        }
-        return filtered;
-    }
-
-
     private List<Method> filterChangeSetAnnotation(List<Method> allMethods) throws MigMongChangeSetException
     {
-        final Set<String> changeSetIds = new HashSet<>();
-        final List<Method> changesetMethods = new ArrayList<>();
+        final Set<Integer> changeSetIds = new HashSet<>();
+        final List<Method> changeSetMethods = new ArrayList<>();
         for (final Method method : allMethods)
         {
             if (method.isAnnotationPresent(ChangeSet.class))
             {
-                String id = method.getAnnotation(ChangeSet.class).id();
+                int id = method.getAnnotation(ChangeSet.class).id();
                 if (changeSetIds.contains(id))
                     throw new MigMongChangeSetException(String.format("Duplicated ChangeSet id found: '%s'", id));
 
                 changeSetIds.add(id);
-                changesetMethods.add(method);
+                changeSetMethods.add(method);
             }
         }
-        return changesetMethods;
+        return changeSetMethods;
     }
-
-
-    private boolean matchesActiveSpringProfile(AnnotatedElement element)
-    {
-        if (!ClassUtils.isPresent("org.springframework.context.annotation.Profile"))
-            return true;
-
-        if (!element.isAnnotationPresent(Profile.class))
-            return true; // no-profiled changeset always matches
-
-        String[] profiles = element.getAnnotation(Profile.class).value();
-        for (String profile : profiles)
-        {
-            if (profile != null && profile.length() > 0 && profile.charAt(0) == '!')
-            {
-                if (!activeProfiles.contains(profile.substring(1)))
-                    return true;
-            }
-            else if (activeProfiles.contains(profile))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
 }

@@ -25,11 +25,7 @@ public class ChangeEntryIndexDao
 
     public void createRequiredUniqueIndex(MongoCollection<Document> collection)
     {
-        collection.createIndex(new Document()
-                        .append(ChangeEntry.CHANGE_ID, 1)
-                        .append(ChangeEntry.AUTHOR, 1),
-                new IndexOptions().unique(true)
-        );
+        collection.createIndex(new Document().append(ChangeEntry.CHANGE_ID, 1), new IndexOptions().unique(true));
     }
 
 
@@ -42,10 +38,11 @@ public class ChangeEntryIndexDao
     public Document findRequiredChangeAndAuthorIndex(MongoDatabase db)
     {
         MongoCollection<Document> indexes = db.getCollection("system.indexes");
-        Document index = indexes.find(new Document()
-                .append("ns", db.getName() + "." + changelogCollectionName)
-                .append("key", new Document().append(ChangeEntry.CHANGE_ID, 1).append(ChangeEntry.AUTHOR, 1))
-        ).first();
+        Document index = indexes
+                .find(new Document()
+                    .append("ns", db.getName() + "." + changelogCollectionName)
+                    .append("key", new Document().append(ChangeEntry.CHANGE_ID, 1)))
+                .first();
 
         return index;
     }

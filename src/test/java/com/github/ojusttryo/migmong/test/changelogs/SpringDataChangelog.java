@@ -11,7 +11,7 @@ import com.github.ojusttryo.migmong.changeset.ChangeSet;
 @ChangeLog
 public class SpringDataChangelog
 {
-    @ChangeSet(author = "abelski", id = "spring_test4", order = "04")
+    @ChangeSet(id = 4)
     public void testChangeSet(MongoTemplate mongoTemplate)
     {
         System.out.println("invoked  with mongoTemplate=" + mongoTemplate.toString());

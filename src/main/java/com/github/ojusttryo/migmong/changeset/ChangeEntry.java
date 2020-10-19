@@ -15,23 +15,19 @@ import org.bson.Document;
 public class ChangeEntry
 {
     public static final String CHANGE_ID = "changeId";
-    public static final String AUTHOR = "author";
     public static final String TIMESTAMP = "timestamp";
     public static final String CHANGE_LOG_CLASS = "changeLogClass";
     public static final String CHANGE_SET_METHOD = "changeSetMethod";
 
-    private String changeId;
-    private String author;
+    private int changeId;
     private Date timestamp;
     private String changeLogClass;
     private String changeSetMethodName;
 
 
-    public ChangeEntry(String changeId, String author, Date timestamp, String changeLogClass,
-            String changeSetMethodName)
+    public ChangeEntry(int changeId, Date timestamp, String changeLogClass, String changeSetMethodName)
     {
         this.changeId = changeId;
-        this.author = author;
         this.timestamp = new Date(timestamp.getTime());
         this.changeLogClass = changeLogClass;
         this.changeSetMethodName = changeSetMethodName;
@@ -43,7 +39,6 @@ public class ChangeEntry
         Document entry = new Document();
 
         entry.append(CHANGE_ID, this.changeId)
-                .append(AUTHOR, this.author)
                 .append(TIMESTAMP, this.timestamp)
                 .append(CHANGE_LOG_CLASS, this.changeLogClass)
                 .append(CHANGE_SET_METHOD, this.changeSetMethodName);
@@ -55,18 +50,11 @@ public class ChangeEntry
     public Document buildSearchQueryDBObject()
     {
         return new Document()
-                .append(CHANGE_ID, this.changeId)
-                .append(AUTHOR, this.author);
+                .append(CHANGE_ID, this.changeId);
     }
 
 
-    public String getAuthor()
-    {
-        return this.author;
-    }
-
-
-    public String getChangeId()
+    public int getChangeId()
     {
         return this.changeId;
     }
@@ -94,7 +82,6 @@ public class ChangeEntry
     public String toString()
     {
         return "[ChangeSet: id=" + this.changeId +
-                ", author=" + this.author +
                 ", changeLogClass=" + this.changeLogClass +
                 ", changeSetMethod=" + this.changeSetMethodName + "]";
     }

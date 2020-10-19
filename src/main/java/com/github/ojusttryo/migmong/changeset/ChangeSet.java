@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Set of changes to be added to the DB. Many changesets are included in one changelog.
+ * Set of changes to be added to the DB. Many instances of {@link ChangeSet} are included in one ChangeLog.
  * @author lstolowski
  * @since 27/07/2014
  * @see ChangeLog
@@ -16,27 +16,11 @@ import java.lang.annotation.Target;
 public @interface ChangeSet
 {
     /**
-     * Author of the {@link ChangeSet}.
-     * Obligatory
-     * @return author
-     */
-    String author();  // must be set
-
-
-    /**
-     * Unique ID of the {@link ChangeSet}.
+     * Unique ID of the {@link ChangeSet}. Sets the order of migrations within the ChangeSet instance.
      * Obligatory
      * @return unique id
      */
-    String id();      // must be set
-
-
-    /**
-     * Sequence that provide correct order for {@link ChangeSet}. Sorted alphabetically, ascending.
-     * Obligatory.
-     * @return ordering
-     */
-    String order();   // must be set
+    int id();
 
 
     /**

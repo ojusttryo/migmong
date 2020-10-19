@@ -15,6 +15,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
+import com.github.ojusttryo.migmong.changeset.Migration;
 import com.github.ojusttryo.migmong.dao.ChangeEntryDao;
 import com.github.ojusttryo.migmong.exception.MigMongChangeSetException;
 import com.github.ojusttryo.migmong.changeset.ChangeEntry;
@@ -400,19 +401,18 @@ public class MigMong implements InitializingBean
 
     private void executeMigration() throws MigMongException
     {
-
         ChangeService service = new ChangeService(changeLogsScanPackage, springEnvironment);
 
-        for (Class<?> changelogClass : service.fetchChangeLogs())
+        for (Migration migration : service.fetchMigrations())
         {
-            Object changelogInstance;
+            Class<?> changeLogClass = migration.getChangeLogClass();
 
             try
             {
-                changelogInstance = changelogClass.getConstructor().newInstance();
-                List<Method> changesetMethods = service.fetchChangeSets(changelogInstance.getClass());
+                Object changelogInstance = changeLogClass.getConstructor().newInstance();
+                List<Method> changeSetMethods = service.fetchChangeSets(changelogInstance.getClass());
 
-                for (Method changeSetMethod : changesetMethods)
+                for (Method changeSetMethod : changeSetMethods)
                 {
                     ChangeEntry changeEntry = service.createChangeEntry(changeSetMethod);
 
@@ -420,16 +420,14 @@ public class MigMong implements InitializingBean
                     {
                         if (dao.isNewChange(changeEntry))
                         {
-                            executeChangeSetMethod(changeSetMethod, changelogInstance, dao.getDb(),
-                                    dao.getMongoDatabase());
+                            executeChangeSetMethod(changeSetMethod, changelogInstance, dao.getMongoDatabase());
                             dao.save(changeEntry);
                             logger.info(changeEntry + " applied");
                         }
                         else if (service.isRunAlwaysChangeSet(changeSetMethod))
                         {
-                            executeChangeSetMethod(changeSetMethod, changelogInstance, dao.getDb(),
-                                    dao.getMongoDatabase());
-                            logger.info(changeEntry + " reapplied");
+                            executeChangeSetMethod(changeSetMethod, changelogInstance, dao.getMongoDatabase());
+                            logger.info(changeEntry + " applied");
                         }
                         else
                         {
@@ -464,26 +462,23 @@ public class MigMong implements InitializingBean
     }
 
 
-    private Object executeChangeSetMethod(Method changeSetMethod, Object changeLogInstance, DB db,
-            MongoDatabase mongoDatabase)
-            throws IllegalAccessException, InvocationTargetException, MigMongChangeSetException
+    private Object executeChangeSetMethod(Method changeSetMethod, Object changeLogInstance, MongoDatabase mongoDatabase)
+            throws IllegalAccessException, InvocationTargetException, MigMongChangeSetException,
+            MigMongConfigurationException
     {
-        if (methodHasParameters(changeSetMethod, DB.class))
-        {
-            logger.debug("method with DB argument");
-            return changeSetMethod.invoke(changeLogInstance, db);
-        }
-        else if (methodHasParameters(changeSetMethod, MongoTemplate.class))
+        if (methodHasParameters(changeSetMethod, MongoTemplate.class))
         {
             logger.debug("method with MongoTemplate argument");
-            MongoTemplate template = mongoTemplate != null ? mongoTemplate : new MongoTemplate(db.getMongo(), dbName);
-            return changeSetMethod.invoke(changeLogInstance, template);
+            if (mongoTemplate == null)
+                throw new MigMongConfigurationException("MongoTemplate is not set for " + changeSetMethod.getName());
+            return changeSetMethod.invoke(changeLogInstance, mongoTemplate);
         }
         else if (methodHasParameters(changeSetMethod, MongoTemplate.class, Environment.class))
         {
             logger.debug("method with MongoTemplate and environment arguments");
-            MongoTemplate template = mongoTemplate != null ? mongoTemplate : new MongoTemplate(db.getMongo(), dbName);
-            return changeSetMethod.invoke(changeLogInstance, template, springEnvironment);
+            if (mongoTemplate == null)
+                throw new MigMongConfigurationException("MongoTemplate is not set for " + changeSetMethod.getName());
+            return changeSetMethod.invoke(changeLogInstance, mongoTemplate, springEnvironment);
         }
         else if (methodHasParameters(changeSetMethod, MongoDatabase.class))
         {
@@ -527,7 +522,7 @@ public class MigMong implements InitializingBean
         }
         if (!hasText(changeLogsScanPackage))
         {
-            throw new MigMongConfigurationException("Scan package for changelogs is not set: use appropriate setter");
+            throw new MigMongConfigurationException("Scan package for change logs is not set: use appropriate setter");
         }
     }
 }

@@ -63,7 +63,6 @@ public class MigMongEnvTest
 
         when(dao.connectMongoDb(any(MongoClientURI.class), anyString()))
                 .thenReturn(fakeMongoDatabase);
-        when(dao.getDb()).thenReturn(fakeDb);
         when(dao.getMongoDatabase()).thenReturn(fakeMongoDatabase);
         when(dao.acquireProcessLock()).thenReturn(true);
         doCallRealMethod().when(dao).save(any(ChangeEntry.class));
@@ -91,8 +90,7 @@ public class MigMongEnvTest
         // then
         long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
                 .count(new Document()
-                        .append(ChangeEntry.CHANGE_ID, "Envtest1")
-                        .append(ChangeEntry.AUTHOR, "testuser"));
+                        .append(ChangeEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
 
     }
@@ -112,8 +110,7 @@ public class MigMongEnvTest
         // then
         long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
                 .count(new Document()
-                        .append(ChangeEntry.CHANGE_ID, "Envtest1")
-                        .append(ChangeEntry.AUTHOR, "testuser"));
+                        .append(ChangeEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
 
     }

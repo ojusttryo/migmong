@@ -12,28 +12,28 @@ import com.github.ojusttryo.migmong.changeset.ChangeSet;
 @ChangeLog
 public class UnProfiledChangeLog
 {
-    @ChangeSet(author = "testuser", id = "Pdev1", order = "01")
+    @ChangeSet(id = 1)
     public void testChangeSet()
     {
         System.out.println("invoked Pdev1");
     }
 
 
-    @ChangeSet(author = "testuser", id = "Pdev2", order = "02")
+    @ChangeSet(id = 2)
     public void testChangeSet2()
     {
         System.out.println("invoked Pdev2");
     }
 
 
-    @ChangeSet(author = "testuser", id = "Pdev3", order = "03")
+    @ChangeSet(id = 3)
     public void testChangeSet3()
     {
         System.out.println("invoked Pdev3");
     }
 
 
-    @ChangeSet(author = "testuser", id = "Pdev4", order = "04")
+    @ChangeSet(id = 4)
     @Profile("pro")
     public void testChangeSet4()
     {
@@ -41,7 +41,7 @@ public class UnProfiledChangeLog
     }
 
 
-    @ChangeSet(author = "testuser", id = "Pdev5", order = "05")
+    @ChangeSet(id = 5)
     @Profile("!pro")
     public void testChangeSet5()
     {

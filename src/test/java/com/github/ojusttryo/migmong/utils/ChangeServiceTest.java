@@ -8,6 +8,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.github.ojusttryo.migmong.changeset.Migration;
+import com.github.ojusttryo.migmong.exception.MigMongException;
 import com.github.ojusttryo.migmong.test.changelogs.AnotherMongobeeTestResource;
 import com.github.ojusttryo.migmong.test.changelogs.MongobeeTestResource;
 import com.github.ojusttryo.migmong.changeset.ChangeEntry;
@@ -38,7 +40,6 @@ public class ChangeServiceTest
             ChangeEntry entry = service.createChangeEntry(foundMethod);
 
             // then
-            Assert.assertEquals("testuser", entry.getAuthor());
             Assert.assertEquals(MongobeeTestResource.class.getName(), entry.getChangeLogClass());
             Assert.assertNotNull(entry.getTimestamp());
             Assert.assertNotNull(entry.getChangeId());
@@ -72,15 +73,15 @@ public class ChangeServiceTest
 
 
     @Test
-    public void shouldFindChangeLogClasses()
+    public void shouldFindChangeLogClasses() throws MigMongException
     {
         // given
         String scanPackage = MongobeeTestResource.class.getPackage().getName();
         ChangeService service = new ChangeService(scanPackage);
         // when
-        List<Class<?>> foundClasses = service.fetchChangeLogs();
+        List<Migration> foundMigrations = service.fetchMigrations();
         // then
-        assertTrue(foundClasses != null && foundClasses.size() > 0);
+        assertTrue(foundMigrations != null && foundMigrations.size() > 0);
     }
 
 

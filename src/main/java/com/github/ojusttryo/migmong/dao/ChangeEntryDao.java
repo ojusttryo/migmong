@@ -24,10 +24,9 @@ import com.mongodb.client.MongoDatabase;
  */
 public class ChangeEntryDao
 {
-    private static final Logger logger = LoggerFactory.getLogger("MigMong dao");
+    private static final Logger logger = LoggerFactory.getLogger(ChangeEntryDao.class);
 
     private MongoDatabase mongoDatabase;
-    private DB db;  // only for Jongo driver compatibility - do not use in other contexts
     private MongoClient mongoClient;
     private ChangeEntryIndexDao indexDao;
     private String changelogCollectionName;
@@ -40,8 +39,7 @@ public class ChangeEntryDao
 
 
     public ChangeEntryDao(String changelogCollectionName, String lockCollectionName, boolean waitForLock,
-            long changeLogLockWaitTime,
-            long changeLogLockPollRate, boolean throwExceptionIfCannotObtainLock)
+            long changeLogLockWaitTime, long changeLogLockPollRate, boolean throwExceptionIfCannotObtainLock)
     {
         this.indexDao = new ChangeEntryIndexDao(changelogCollectionName);
         this.lockDao = new LockDao(lockCollectionName);
@@ -113,10 +111,6 @@ public class ChangeEntryDao
         {
 
             this.mongoClient = mongo;
-
-            db = mongo.getDB(
-                    dbName); // for Jongo driver and backward compatibility (constructor has required parameter Jongo
-            // (DB) )
             mongoDatabase = mongo.getDatabase(dbName);
 
             ensureChangeLogCollectionIndex(mongoDatabase.getCollection(changelogCollectionName));
@@ -145,17 +139,6 @@ public class ChangeEntryDao
     public long getChangeLogLockWaitTime()
     {
         return changeLogLockWaitTime;
-    }
-
-
-    /**
-     * @deprecated implemented only for Jongo driver compatibility and backward compatibility - do not use in other
-     * contexts
-     * @return com.mongodb.DB
-     */
-    public DB getDb()
-    {
-        return db;
     }
 
 

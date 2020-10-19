@@ -62,8 +62,7 @@ public class ChangeEntryIndexDaoTest
 
         MongoCollection<Document> collection = db.getCollection(CHANGELOG_COLLECTION_NAME);
         collection.createIndex(new Document()
-                .append(ChangeEntry.CHANGE_ID, 1)
-                .append(ChangeEntry.AUTHOR, 1));
+                .append(ChangeEntry.CHANGE_ID, 1));
         Document index = new Document("name", CHANGEID_AUTHOR_INDEX_NAME);
 
         // given
