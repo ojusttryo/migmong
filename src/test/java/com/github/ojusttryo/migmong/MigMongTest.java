@@ -63,7 +63,7 @@ public class MigMongTest
 
 
     @Before
-    public void init() throws MigMongException, UnknownHostException
+    public void init() throws MigMongException
     {
         fakeDb = new Fongo("testServer").getDB("mongobeetest");
         fakeMongoDatabase = new Fongo("testServer").getDatabase("mongobeetest");
@@ -96,23 +96,23 @@ public class MigMongTest
         verify(dao, times(13)).save(any(ChangeEntry.class)); // 13 changesets saved to dbchangelog
 
         // dbchangelog collection checking
-        long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).count(new Document()
+        long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
                 .append(ChangeEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
-        long change2 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).count(new Document()
+        long change2 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
                 .append(ChangeEntry.CHANGE_ID, 2));
         assertEquals(1, change2);
-        long change3 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).count(new Document()
+        long change3 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
                 .append(ChangeEntry.CHANGE_ID, 3));
         assertEquals(1, change3);
-        long change4 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).count(new Document()
+        long change4 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
                 .append(ChangeEntry.CHANGE_ID, 4));
         assertEquals(1, change4);
-        long change5 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).count(new Document()
+        long change5 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
                 .append(ChangeEntry.CHANGE_ID, 5));
         assertEquals(1, change5);
 
-        long changeAll = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).count(new Document());
+        long changeAll = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document());
         assertEquals(12, changeAll);
     }
 

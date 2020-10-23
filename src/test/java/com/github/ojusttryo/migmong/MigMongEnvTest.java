@@ -89,7 +89,7 @@ public class MigMongEnvTest
 
         // then
         long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
-                .count(new Document()
+                .countDocuments(new Document()
                         .append(ChangeEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
 
@@ -109,7 +109,7 @@ public class MigMongEnvTest
 
         // then
         long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
-                .count(new Document()
+                .countDocuments(new Document()
                         .append(ChangeEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
 

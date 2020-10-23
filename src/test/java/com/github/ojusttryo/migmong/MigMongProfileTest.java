@@ -93,7 +93,7 @@ public class MigMongProfileTest
         runner.execute();
 
         // then
-        long changes = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).count(new Document());
+        long changes = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document());
         assertEquals(CHANGELOG_COUNT, changes);
     }
 
@@ -110,7 +110,7 @@ public class MigMongProfileTest
         runner.execute();
 
         // then
-        long changes = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).count(new Document());
+        long changes = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document());
         assertEquals(CHANGELOG_COUNT, changes);
     }
 
@@ -127,7 +127,7 @@ public class MigMongProfileTest
         runner.execute();
 
         // then
-        long changes = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).count(new Document());
+        long changes = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document());
         assertEquals(CHANGELOG_COUNT, changes);
     }
 
@@ -145,27 +145,27 @@ public class MigMongProfileTest
 
         // then
         long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
-                .count(new Document()
+                .countDocuments(new Document()
                         .append(ChangeEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
 
         long change2 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
-                .count(new Document()
+                .countDocuments(new Document()
                         .append(ChangeEntry.CHANGE_ID, 2));
         assertEquals(1, change2);
 
         long change3 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
-                .count(new Document()
+                .countDocuments(new Document()
                         .append(ChangeEntry.CHANGE_ID, 3));
         assertEquals(1, change3);  //  @Profile("dev")  should not match
 
         long change4 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
-                .count(new Document()
+                .countDocuments(new Document()
                         .append(ChangeEntry.CHANGE_ID, 4));
         assertEquals(0, change4);  //  @Profile("pro")  should not match
 
         long change5 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
-                .count(new Document()
+                .countDocuments(new Document()
                         .append(ChangeEntry.CHANGE_ID, 5));
         assertEquals(1, change5);  //  @Profile("!pro")  should match
     }

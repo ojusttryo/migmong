@@ -25,7 +25,12 @@ import com.github.ojusttryo.migmong.exception.MigMongException;
 import com.github.ojusttryo.migmong.utils.ChangeService;
 import com.mongodb.DB;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
+import com.mongodb.MongoCredential;
+import com.mongodb.ReadConcern;
+import com.mongodb.ServerAddress;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoDatabase;
 
 /**
@@ -80,10 +85,7 @@ public class MigMong implements InitializingBean
     {
         this.mongoClientURI = mongoClientURI;
         this.setDbName(mongoClientURI.getDatabase());
-        this.dao = new ChangeEntryDao(DEFAULT_CHANGELOG_COLLECTION_NAME, DEFAULT_LOCK_COLLECTION_NAME,
-                DEFAULT_WAIT_FOR_LOCK,
-                DEFAULT_CHANGE_LOG_LOCK_WAIT_TIME, DEFAULT_CHANGE_LOG_LOCK_POLL_RATE,
-                DEFAULT_THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK);
+        this.dao = createDao();
     }
 
 
@@ -98,10 +100,7 @@ public class MigMong implements InitializingBean
     public MigMong(MongoClient mongoClient)
     {
         this.mongoClient = mongoClient;
-        this.dao = new ChangeEntryDao(DEFAULT_CHANGELOG_COLLECTION_NAME, DEFAULT_LOCK_COLLECTION_NAME,
-                DEFAULT_WAIT_FOR_LOCK,
-                DEFAULT_CHANGE_LOG_LOCK_WAIT_TIME, DEFAULT_CHANGE_LOG_LOCK_POLL_RATE,
-                DEFAULT_THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK);
+        this.dao = createDao();
     }
 
 
@@ -133,15 +132,29 @@ public class MigMong implements InitializingBean
      * @param mongoURI with correct format
      * @see com.mongodb.MongoClientURI
      */
-
     public MigMong(String mongoURI)
     {
         this(new MongoClientURI(mongoURI));
     }
 
 
+    public MigMong(String host, Integer port, String dbName, String user, String password)
+    {
+        this.dbName = dbName;
+        MongoCredential credential = MongoCredential.createCredential(user, dbName, password.toCharArray());
+        ServerAddress address = new ServerAddress(host, port);
+        MongoClientOptions options = MongoClientOptions
+                .builder()
+                .writeConcern(WriteConcern.ACKNOWLEDGED)
+                .readConcern(ReadConcern.LOCAL)
+                .build();
+        mongoClient = new MongoClient(address, credential, options);
+        this.dao = createDao();
+    }
+
+
     /**
-     * For Spring users: executing mongobee after bean is created in the Spring context
+     * For Spring users: executing migmong after bean is created in the Spring context
      *
      * @throws Exception exception
      */
@@ -457,7 +470,6 @@ public class MigMong implements InitializingBean
             {
                 throw new MigMongException(e.getMessage(), e);
             }
-
         }
     }
 
@@ -480,10 +492,22 @@ public class MigMong implements InitializingBean
                 throw new MigMongConfigurationException("MongoTemplate is not set for " + changeSetMethod.getName());
             return changeSetMethod.invoke(changeLogInstance, mongoTemplate, springEnvironment);
         }
+        else if (methodHasParameters(changeSetMethod, MongoTemplate.class, ApplicationContext.class))
+        {
+            logger.debug("method with MongoTemplate argument and application context");
+            if (mongoTemplate == null)
+                throw new MigMongConfigurationException("MongoTemplate is not set for " + changeSetMethod.getName());
+            return changeSetMethod.invoke(changeLogInstance, mongoTemplate, applicationContext);
+        }
         else if (methodHasParameters(changeSetMethod, MongoDatabase.class))
         {
             logger.debug("method with DB argument");
             return changeSetMethod.invoke(changeLogInstance, mongoDatabase);
+        }
+        else if (methodHasParameters(changeSetMethod, MongoDatabase.class, ApplicationContext.class))
+        {
+            logger.debug("method with DB argument and application context");
+            return changeSetMethod.invoke(changeLogInstance, mongoDatabase, applicationContext);
         }
         else if (changeSetMethod.getParameterTypes().length == 0)
         {
@@ -524,5 +548,14 @@ public class MigMong implements InitializingBean
         {
             throw new MigMongConfigurationException("Scan package for change logs is not set: use appropriate setter");
         }
+    }
+
+
+    private ChangeEntryDao createDao()
+    {
+        return new ChangeEntryDao(DEFAULT_CHANGELOG_COLLECTION_NAME, DEFAULT_LOCK_COLLECTION_NAME,
+                DEFAULT_WAIT_FOR_LOCK,
+                DEFAULT_CHANGE_LOG_LOCK_WAIT_TIME, DEFAULT_CHANGE_LOG_LOCK_POLL_RATE,
+                DEFAULT_THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK);
     }
 }

@@ -63,33 +63,6 @@ public class ChangeEntryDaoTest
 
 
     @Test
-    public void shouldCreateChangeIdAuthorIndexIfNotFound() throws MigMongConfigurationException
-    {
-
-        // given
-        ChangeEntryDao dao = new ChangeEntryDao(CHANGELOG_COLLECTION_NAME, LOCK_COLLECTION_NAME, WAIT_FOR_LOCK,
-                CHANGE_LOG_LOCK_WAIT_TIME, CHANGE_LOG_LOCK_POLL_RATE, THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK);
-
-        MongoClient mongoClient = mock(MongoClient.class);
-        MongoDatabase db = new Fongo(TEST_SERVER).getDatabase(DB_NAME);
-
-        when(mongoClient.getDatabase(anyString())).thenReturn(db);
-
-        ChangeEntryIndexDao indexDaoMock = mock(ChangeEntryIndexDao.class);
-        when(indexDaoMock.findRequiredChangeAndAuthorIndex(db)).thenReturn(null);
-        dao.setIndexDao(indexDaoMock);
-
-        // when
-        dao.connectMongoDb(mongoClient, DB_NAME);
-
-        //then
-        verify(indexDaoMock, times(1)).createRequiredUniqueIndex(any(FongoMongoCollection.class));
-        // and not
-        verify(indexDaoMock, times(0)).dropIndex(any(FongoMongoCollection.class), any(Document.class));
-    }
-
-
-    @Test
     public void shouldGetLockWhenLockDaoGetsLock() throws Exception
     {
 
@@ -164,32 +137,6 @@ public class ChangeEntryDaoTest
         verify(indexDaoMock, times(0)).createRequiredUniqueIndex(db.getCollection(CHANGELOG_COLLECTION_NAME));
         // and not
         verify(indexDaoMock, times(0)).dropIndex(db.getCollection(CHANGELOG_COLLECTION_NAME), new Document());
-    }
-
-
-    @Test
-    public void shouldRecreateChangeIdAuthorIndexIfFoundNotUnique() throws MigMongConfigurationException
-    {
-
-        // given
-        MongoClient mongoClient = mock(MongoClient.class);
-        MongoDatabase db = new Fongo(TEST_SERVER).getDatabase(DB_NAME);
-        when(mongoClient.getDatabase(anyString())).thenReturn(db);
-
-        ChangeEntryDao dao = new ChangeEntryDao(CHANGELOG_COLLECTION_NAME, LOCK_COLLECTION_NAME, WAIT_FOR_LOCK,
-                CHANGE_LOG_LOCK_WAIT_TIME, CHANGE_LOG_LOCK_POLL_RATE, THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK);
-        ChangeEntryIndexDao indexDaoMock = mock(ChangeEntryIndexDao.class);
-        when(indexDaoMock.findRequiredChangeAndAuthorIndex(db)).thenReturn(new Document());
-        when(indexDaoMock.isUnique(any(Document.class))).thenReturn(false);
-        dao.setIndexDao(indexDaoMock);
-
-        // when
-        dao.connectMongoDb(mongoClient, DB_NAME);
-
-        //then
-        verify(indexDaoMock, times(1)).dropIndex(any(FongoMongoCollection.class), any(Document.class));
-        // and
-        verify(indexDaoMock, times(1)).createRequiredUniqueIndex(any(FongoMongoCollection.class));
     }
 
 
