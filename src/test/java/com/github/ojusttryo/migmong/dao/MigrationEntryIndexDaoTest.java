@@ -13,7 +13,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.github.fakemongo.Fongo;
-import com.github.ojusttryo.migmong.changeset.ChangeEntry;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -23,7 +23,7 @@ import com.mongodb.client.MongoDatabase;
  * @author lstolowski
  * @since 10.12.14
  */
-public class ChangeEntryIndexDaoTest
+public class MigrationEntryIndexDaoTest
 {
     private static final String TEST_SERVER = "testServer";
     private static final String DB_NAME = "mongobeetest";
@@ -62,7 +62,7 @@ public class ChangeEntryIndexDaoTest
 
         MongoCollection<Document> collection = db.getCollection(CHANGELOG_COLLECTION_NAME);
         collection.createIndex(new Document()
-                .append(ChangeEntry.CHANGE_ID, 1));
+                .append(MigrationEntry.CHANGE_ID, 1));
         Document index = new Document("name", CHANGEID_AUTHOR_INDEX_NAME);
 
         // given

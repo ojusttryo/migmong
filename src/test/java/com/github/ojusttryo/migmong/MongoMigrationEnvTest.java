@@ -18,7 +18,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import com.github.fakemongo.Fongo;
 import com.github.ojusttryo.migmong.resources.EnvironmentMock;
 import com.github.ojusttryo.migmong.test.changelogs.EnvironmentDependentTestResource;
-import com.github.ojusttryo.migmong.changeset.ChangeEntry;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.github.ojusttryo.migmong.dao.ChangeEntryDao;
 import com.github.ojusttryo.migmong.dao.ChangeEntryIndexDao;
 import com.mongodb.DB;
@@ -29,12 +29,12 @@ import com.mongodb.client.MongoDatabase;
  * Created by lstolowski on 13.07.2017.
  */
 @RunWith(MockitoJUnitRunner.class)
-public class MigMongEnvTest
+public class MongoMigrationEnvTest
 {
     private static final String CHANGELOG_COLLECTION_NAME = "dbchangelog";
 
     @InjectMocks
-    private MigMong runner = new MigMong();
+    private MongoMigration runner = new MongoMigration();
 
     @Mock
     private ChangeEntryDao dao;
@@ -65,11 +65,11 @@ public class MigMongEnvTest
                 .thenReturn(fakeMongoDatabase);
         when(dao.getMongoDatabase()).thenReturn(fakeMongoDatabase);
         when(dao.acquireProcessLock()).thenReturn(true);
-        doCallRealMethod().when(dao).save(any(ChangeEntry.class));
-        doCallRealMethod().when(dao).setChangelogCollectionName(anyString());
+        doCallRealMethod().when(dao).save(any(MigrationEntry.class));
+        doCallRealMethod().when(dao).setMigrationCollectionName(anyString());
         doCallRealMethod().when(dao).setIndexDao(any(ChangeEntryIndexDao.class));
         dao.setIndexDao(indexDao);
-        dao.setChangelogCollectionName(CHANGELOG_COLLECTION_NAME);
+        dao.setMigrationCollectionName(CHANGELOG_COLLECTION_NAME);
 
         runner.setDbName("mongobeetest");
         runner.setEnabled(true);
@@ -81,8 +81,8 @@ public class MigMongEnvTest
     {
         // given
         runner.setSpringEnvironment(new EnvironmentMock());
-        runner.setChangeLogsScanPackage(EnvironmentDependentTestResource.class.getPackage().getName());
-        when(dao.isNewChange(any(ChangeEntry.class))).thenReturn(true);
+        runner.setMigrationScanPackage(EnvironmentDependentTestResource.class.getPackage().getName());
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
 
         // when
         runner.execute();
@@ -90,7 +90,7 @@ public class MigMongEnvTest
         // then
         long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
                 .countDocuments(new Document()
-                        .append(ChangeEntry.CHANGE_ID, 1));
+                        .append(MigrationEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
 
     }
@@ -101,8 +101,8 @@ public class MigMongEnvTest
     {
         // given
         runner.setSpringEnvironment(null);
-        runner.setChangeLogsScanPackage(EnvironmentDependentTestResource.class.getPackage().getName());
-        when(dao.isNewChange(any(ChangeEntry.class))).thenReturn(true);
+        runner.setMigrationScanPackage(EnvironmentDependentTestResource.class.getPackage().getName());
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
 
         // when
         runner.execute();
@@ -110,7 +110,7 @@ public class MigMongEnvTest
         // then
         long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
                 .countDocuments(new Document()
-                        .append(ChangeEntry.CHANGE_ID, 1));
+                        .append(MigrationEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
 
     }

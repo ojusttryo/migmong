@@ -12,7 +12,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.net.UnknownHostException;
 import java.util.Collections;
 
 import org.bson.Document;
@@ -26,23 +25,23 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.github.fakemongo.Fongo;
+import com.github.ojusttryo.migmong.exception.MigrationException;
 import com.github.ojusttryo.migmong.test.changelogs.MongobeeTestResource;
-import com.github.ojusttryo.migmong.changeset.ChangeEntry;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.github.ojusttryo.migmong.dao.ChangeEntryDao;
 import com.github.ojusttryo.migmong.dao.ChangeEntryIndexDao;
-import com.github.ojusttryo.migmong.exception.MigMongConfigurationException;
-import com.github.ojusttryo.migmong.exception.MigMongException;
+import com.github.ojusttryo.migmong.exception.MigrationConfigurationException;
 import com.mongodb.DB;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoDatabase;
 
 @RunWith(MockitoJUnitRunner.class)
-public class MigMongTest
+public class MongoMigrationTest
 {
 
     private static final String CHANGELOG_COLLECTION_NAME = "dbchangelog";
     @InjectMocks
-    private MigMong runner = new MigMong();
+    private MongoMigration runner = new MongoMigration();
 
     @Mock
     private ChangeEntryDao dao;
@@ -63,22 +62,22 @@ public class MigMongTest
 
 
     @Before
-    public void init() throws MigMongException
+    public void init() throws MigrationException
     {
         fakeDb = new Fongo("testServer").getDB("mongobeetest");
         fakeMongoDatabase = new Fongo("testServer").getDatabase("mongobeetest");
         when(dao.connectMongoDb(any(MongoClientURI.class), anyString()))
                 .thenReturn(fakeMongoDatabase);
         when(dao.getMongoDatabase()).thenReturn(fakeMongoDatabase);
-        doCallRealMethod().when(dao).save(any(ChangeEntry.class));
-        doCallRealMethod().when(dao).setChangelogCollectionName(anyString());
+        doCallRealMethod().when(dao).save(any(MigrationEntry.class));
+        doCallRealMethod().when(dao).setMigrationCollectionName(anyString());
         doCallRealMethod().when(dao).setIndexDao(any(ChangeEntryIndexDao.class));
         dao.setIndexDao(indexDao);
-        dao.setChangelogCollectionName(CHANGELOG_COLLECTION_NAME);
+        dao.setMigrationCollectionName(CHANGELOG_COLLECTION_NAME);
 
         runner.setDbName("mongobeetest");
         runner.setEnabled(true);
-        runner.setChangeLogsScanPackage(MongobeeTestResource.class.getPackage().getName());
+        runner.setMigrationScanPackage(MongobeeTestResource.class.getPackage().getName());
     }
 
 
@@ -87,29 +86,29 @@ public class MigMongTest
     {
         // given
         when(dao.acquireProcessLock()).thenReturn(true);
-        when(dao.isNewChange(any(ChangeEntry.class))).thenReturn(true);
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
 
         // when
         runner.execute();
 
         // then
-        verify(dao, times(13)).save(any(ChangeEntry.class)); // 13 changesets saved to dbchangelog
+        verify(dao, times(13)).save(any(MigrationEntry.class)); // 13 changesets saved to dbchangelog
 
         // dbchangelog collection checking
         long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(ChangeEntry.CHANGE_ID, 1));
+                .append(MigrationEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
         long change2 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(ChangeEntry.CHANGE_ID, 2));
+                .append(MigrationEntry.CHANGE_ID, 2));
         assertEquals(1, change2);
         long change3 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(ChangeEntry.CHANGE_ID, 3));
+                .append(MigrationEntry.CHANGE_ID, 3));
         assertEquals(1, change3);
         long change4 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(ChangeEntry.CHANGE_ID, 4));
+                .append(MigrationEntry.CHANGE_ID, 4));
         assertEquals(1, change4);
         long change5 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(ChangeEntry.CHANGE_ID, 5));
+                .append(MigrationEntry.CHANGE_ID, 5));
         assertEquals(1, change5);
 
         long changeAll = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document());
@@ -127,7 +126,7 @@ public class MigMongTest
         runner.execute();
 
         // then
-        verify(dao, atLeastOnce()).isNewChange(any(ChangeEntry.class));
+        verify(dao, atLeastOnce()).isNewMigrationUnit(any(MigrationEntry.class));
     }
 
 
@@ -141,7 +140,7 @@ public class MigMongTest
         runner.execute();
 
         // then
-        verify(dao, never()).isNewChange(any(ChangeEntry.class));
+        verify(dao, never()).isNewMigrationUnit(any(MigrationEntry.class));
     }
 
 
@@ -149,13 +148,13 @@ public class MigMongTest
     public void shouldPassOverChangeSets() throws Exception
     {
         // given
-        when(dao.isNewChange(any(ChangeEntry.class))).thenReturn(false);
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(false);
 
         // when
         runner.execute();
 
         // then
-        verify(dao, times(0)).save(any(ChangeEntry.class)); // no changesets saved to dbchangelog
+        verify(dao, times(0)).save(any(MigrationEntry.class)); // no changesets saved to dbchangelog
     }
 
 
@@ -182,7 +181,7 @@ public class MigMongTest
         // would be nicer with a mock for the whole execution, but this would mean breaking out to separate class..
         // this should be "good enough"
         when(dao.acquireProcessLock()).thenReturn(true);
-        when(dao.isNewChange(any(ChangeEntry.class))).thenThrow(RuntimeException.class);
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenThrow(RuntimeException.class);
 
         // when
         // have to catch the exception to be able to verify after
@@ -213,12 +212,12 @@ public class MigMongTest
     }
 
 
-    @Test(expected = MigMongConfigurationException.class)
+    @Test(expected = MigrationConfigurationException.class)
     public void shouldThrowAnExceptionIfNoDbNameSet() throws Exception
     {
-        MigMong runner = new MigMong(new MongoClientURI("mongodb://localhost:27017/"));
+        MongoMigration runner = new MongoMigration(new MongoClientURI("mongodb://localhost:27017/"));
         runner.setEnabled(true);
-        runner.setChangeLogsScanPackage(MongobeeTestResource.class.getPackage().getName());
+        runner.setMigrationScanPackage(MongobeeTestResource.class.getPackage().getName());
         runner.execute();
     }
 
@@ -229,7 +228,7 @@ public class MigMongTest
         MongoTemplate mt = mock(MongoTemplate.class);
         when(mt.getCollectionNames()).thenReturn(Collections.EMPTY_SET);
         when(dao.acquireProcessLock()).thenReturn(true);
-        when(dao.isNewChange(any(ChangeEntry.class))).thenReturn(true);
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
         runner.setMongoTemplate(mt);
         runner.afterPropertiesSet();
         verify(mt).getCollectionNames();

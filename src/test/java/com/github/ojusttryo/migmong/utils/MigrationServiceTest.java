@@ -8,12 +8,13 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.github.ojusttryo.migmong.changeset.Migration;
-import com.github.ojusttryo.migmong.exception.MigMongException;
+import com.github.ojusttryo.migmong.exception.MigrationUnitException;
+import com.github.ojusttryo.migmong.exception.MigrationException;
+import com.github.ojusttryo.migmong.migration.MigrationInfo;
+import com.github.ojusttryo.migmong.migration.Version;
 import com.github.ojusttryo.migmong.test.changelogs.AnotherMongobeeTestResource;
 import com.github.ojusttryo.migmong.test.changelogs.MongobeeTestResource;
-import com.github.ojusttryo.migmong.changeset.ChangeEntry;
-import com.github.ojusttryo.migmong.exception.MigMongChangeSetException;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
 
 import junit.framework.Assert;
 
@@ -21,23 +22,23 @@ import junit.framework.Assert;
  * @author lstolowski
  * @since 27/07/2014
  */
-public class ChangeServiceTest
+public class MigrationServiceTest
 {
 
     @Test
-    public void shouldCreateEntry() throws MigMongChangeSetException
+    public void shouldCreateEntry() throws MigrationUnitException
     {
 
         // given
         String scanPackage = MongobeeTestResource.class.getPackage().getName();
-        ChangeService service = new ChangeService(scanPackage);
-        List<Method> foundMethods = service.fetchChangeSets(MongobeeTestResource.class);
+        MigrationService service = new MigrationService(scanPackage);
+        List<Method> foundMethods = service.fetchMigrationUnits(MongobeeTestResource.class);
 
         for (Method foundMethod : foundMethods)
         {
 
             // when
-            ChangeEntry entry = service.createChangeEntry(foundMethod);
+            MigrationEntry entry = service.createMigrationEntry(foundMethod);
 
             // then
             Assert.assertEquals(MongobeeTestResource.class.getName(), entry.getChangeLogClass());
@@ -48,24 +49,24 @@ public class ChangeServiceTest
     }
 
 
-    @Test(expected = MigMongChangeSetException.class)
-    public void shouldFailOnDuplicatedChangeSets() throws MigMongChangeSetException
+    @Test(expected = MigrationUnitException.class)
+    public void shouldFailOnDuplicatedChangeSets() throws MigrationUnitException
     {
         String scanPackage = ChangeLogWithDuplicate.class.getPackage().getName();
-        ChangeService service = new ChangeService(scanPackage);
-        service.fetchChangeSets(ChangeLogWithDuplicate.class);
+        MigrationService service = new MigrationService(scanPackage);
+        service.fetchMigrationUnits(ChangeLogWithDuplicate.class);
     }
 
 
     @Test
-    public void shouldFindAnotherChangeSetMethods() throws MigMongChangeSetException
+    public void shouldFindAnotherChangeSetMethods() throws MigrationUnitException
     {
         // given
         String scanPackage = MongobeeTestResource.class.getPackage().getName();
-        ChangeService service = new ChangeService(scanPackage);
+        MigrationService service = new MigrationService(scanPackage);
 
         // when
-        List<Method> foundMethods = service.fetchChangeSets(AnotherMongobeeTestResource.class);
+        List<Method> foundMethods = service.fetchMigrationUnits(AnotherMongobeeTestResource.class);
 
         // then
         assertTrue(foundMethods != null && foundMethods.size() == 6);
@@ -73,27 +74,27 @@ public class ChangeServiceTest
 
 
     @Test
-    public void shouldFindChangeLogClasses() throws MigMongException
+    public void shouldFindChangeLogClasses() throws MigrationException
     {
         // given
         String scanPackage = MongobeeTestResource.class.getPackage().getName();
-        ChangeService service = new ChangeService(scanPackage);
+        MigrationService service = new MigrationService(scanPackage);
         // when
-        List<Migration> foundMigrations = service.fetchMigrations();
+        List<MigrationInfo> foundMigrations = service.fetchMigrations(new Version(1, 1, 1));
         // then
         assertTrue(foundMigrations != null && foundMigrations.size() > 0);
     }
 
 
     @Test
-    public void shouldFindChangeSetMethods() throws MigMongChangeSetException
+    public void shouldFindChangeSetMethods() throws MigrationUnitException
     {
         // given
         String scanPackage = MongobeeTestResource.class.getPackage().getName();
-        ChangeService service = new ChangeService(scanPackage);
+        MigrationService service = new MigrationService(scanPackage);
 
         // when
-        List<Method> foundMethods = service.fetchChangeSets(MongobeeTestResource.class);
+        List<Method> foundMethods = service.fetchMigrationUnits(MongobeeTestResource.class);
 
         // then
         assertTrue(foundMethods != null && foundMethods.size() == 5);
@@ -101,24 +102,24 @@ public class ChangeServiceTest
 
 
     @Test
-    public void shouldFindIsRunAlwaysMethod() throws MigMongChangeSetException
+    public void shouldFindIsRunAlwaysMethod() throws MigrationUnitException
     {
         // given
         String scanPackage = MongobeeTestResource.class.getPackage().getName();
-        ChangeService service = new ChangeService(scanPackage);
+        MigrationService service = new MigrationService(scanPackage);
 
         // when
-        List<Method> foundMethods = service.fetchChangeSets(AnotherMongobeeTestResource.class);
+        List<Method> foundMethods = service.fetchMigrationUnits(AnotherMongobeeTestResource.class);
         // then
         for (Method foundMethod : foundMethods)
         {
             if (foundMethod.getName().equals("testChangeSetWithAlways"))
             {
-                assertTrue(service.isRunAlwaysChangeSet(foundMethod));
+                assertTrue(service.isAlwaysRunnableMigration(foundMethod));
             }
             else
             {
-                assertFalse(service.isRunAlwaysChangeSet(foundMethod));
+                assertFalse(service.isAlwaysRunnableMigration(foundMethod));
             }
         }
     }

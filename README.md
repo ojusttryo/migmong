@@ -2,7 +2,7 @@
 
 
 **migmong** is a Java tool which helps you to *manage changes* in your MongoDB and *synchronize* them with your application.
-The concept is very similar to other db migration tools such as [Liquibase](http://www.liquibase.org) or [Flyway](http://flywaydb.org) but *without using XML/JSON/YML files*.
+The concept is very similar to other db migrationInfo tools such as [Liquibase](http://www.liquibase.org) or [Flyway](http://flywaydb.org) but *without using XML/JSON/YML files*.
 
 The goal is to keep this tool simple and comfortable to use.
 
@@ -27,7 +27,7 @@ With Maven
 
 You need to instantiate MigMong object and provide some configuration.
 If you use Spring can be instantiated as a singleton bean in the Spring context. 
-In this case the migration process will be executed automatically on startup.
+In this case the migrationInfo process will be executed automatically on startup.
 
 ```java
 @Bean
@@ -43,7 +43,7 @@ public Mongobee mongobee(){
 
 
 ### Usage without Spring
-Using mongobee without a spring context has similar configuration but you have to remember to run `execute()` method to start a migration process.
+Using mongobee without a spring context has similar configuration but you have to remember to run `execute()` method to start a migrationInfo process.
 
 ```java
 Mongobee runner = new Mongobee("mongodb://YOUR_DB_HOST:27017/DB_NAME");
@@ -51,15 +51,15 @@ runner.setDbName("yourDbName");         // host must be set if not set in URI
 runner.setChangeLogsScanPackage(
      "com.example.yourapp.changelogs"); // package to scan for changesets
 
-runner.execute();         //  ------> starts migration changesets
+runner.execute();         //  ------> starts migrationInfo changesets
 ```
 
 Above examples provide minimal configuration. `Mongobee` object provides some other possibilities (setters) to make the tool more flexible:
 
 ```java
 runner.setChangelogCollectionName(logColName);   // default is dbchangelog, collection with applied change sets
-runner.setLockCollectionName(lockColName);       // default is mongobeelock, collection used during migration process
-runner.setEnabled(shouldBeEnabled);              // default is true, migration won't start if set to false
+runner.setLockCollectionName(lockColName);       // default is mongobeelock, collection used during migrationInfo process
+runner.setEnabled(shouldBeEnabled);              // default is true, migrationInfo won't start if set to false
 ```
 
 MongoDB URI format:
@@ -145,7 +145,7 @@ public void someChange3(DB db) {
 @ChangeSet(order = "004", id = "someChangeWithSpringDataTemplate", author = "testAuthor")
 public void someChange5(MongoTemplate mongoTemplate) {
   // type: org.springframework.data.mongodb.core.MongoTemplate
-  // Spring Data integration allows using MongoTemplate in the ChangeSet
+  MigrationUnit
   // example:
   mongoTemplate.save(myEntity);
 }
@@ -154,7 +154,7 @@ public void someChange5(MongoTemplate mongoTemplate) {
 public void someChange5(MongoTemplate mongoTemplate, Environment environment) {
   // type: org.springframework.data.mongodb.core.MongoTemplate
   // type: org.springframework.core.env.Environment
-  // Spring Data integration allows using MongoTemplate and Environment in the ChangeSet
+  MigrationUnit
 }
 ```
 

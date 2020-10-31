@@ -1,4 +1,4 @@
-package com.github.ojusttryo.migmong.changeset;
+package com.github.ojusttryo.migmong.migration.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -6,14 +6,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Class containing particular change sets {@link ChangeSet}
- * @author lstolowski
- * @since 27/07/2014
- * @see ChangeSet
+ * Class containing particular migration units {@link MigrationUnit}
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ChangeLog
+public @interface Migration
 {
 
 }

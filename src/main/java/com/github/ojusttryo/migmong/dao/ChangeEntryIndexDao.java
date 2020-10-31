@@ -2,7 +2,7 @@ package com.github.ojusttryo.migmong.dao;
 
 import org.bson.Document;
 
-import com.github.ojusttryo.migmong.changeset.ChangeEntry;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
@@ -25,7 +25,7 @@ public class ChangeEntryIndexDao
 
     public void createRequiredUniqueIndex(MongoCollection<Document> collection)
     {
-        collection.createIndex(new Document().append(ChangeEntry.CHANGE_ID, 1), new IndexOptions().unique(true));
+        collection.createIndex(new Document().append(MigrationEntry.CHANGE_ID, 1), new IndexOptions().unique(true));
     }
 
 
@@ -41,7 +41,7 @@ public class ChangeEntryIndexDao
         Document index = indexes
                 .find(new Document()
                     .append("ns", db.getName() + "." + changelogCollectionName)
-                    .append("key", new Document().append(ChangeEntry.CHANGE_ID, 1)))
+                    .append("key", new Document().append(MigrationEntry.CHANGE_ID, 1)))
                 .first();
 
         return index;

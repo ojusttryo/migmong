@@ -6,9 +6,9 @@ package com.github.ojusttryo.migmong.exception;
  * @author lstolowski
  * @since 27/07/2014
  */
-public class MigMongConnectionException extends MigMongException
+public class MigrationConnectionException extends MigrationException
 {
-    public MigMongConnectionException(String message, Exception baseException)
+    public MigrationConnectionException(String message, Exception baseException)
     {
         super(message, baseException);
     }

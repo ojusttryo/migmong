@@ -13,9 +13,8 @@ import org.bson.Document;
 import org.junit.Test;
 
 import com.github.fakemongo.Fongo;
-import com.github.ojusttryo.migmong.exception.MigMongLockException;
-import com.github.ojusttryo.migmong.exception.MigMongConfigurationException;
-import com.mongodb.FongoMongoCollection;
+import com.github.ojusttryo.migmong.exception.MigrationLockException;
+import com.github.ojusttryo.migmong.exception.MigrationConfigurationException;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 
@@ -23,7 +22,7 @@ import com.mongodb.client.MongoDatabase;
  * @author lstolowski
  * @since 10.12.14
  */
-public class ChangeEntryDaoTest
+public class MigrationEntryDaoTest
 {
     private static final String TEST_SERVER = "testServer";
     private static final String DB_NAME = "mongobeetest";
@@ -89,7 +88,7 @@ public class ChangeEntryDaoTest
 
 
     @Test
-    public void shouldInitiateLock() throws MigMongConfigurationException
+    public void shouldInitiateLock() throws MigrationConfigurationException
     {
 
         // given
@@ -115,7 +114,7 @@ public class ChangeEntryDaoTest
 
 
     @Test
-    public void shouldNotCreateChangeIdAuthorIndexIfFound() throws MigMongConfigurationException
+    public void shouldNotCreateChangeIdAuthorIndexIfFound() throws MigrationConfigurationException
     {
 
         // given
@@ -165,7 +164,7 @@ public class ChangeEntryDaoTest
     }
 
 
-    @Test(expected = MigMongLockException.class)
+    @Test(expected = MigrationLockException.class)
     public void shouldThrowLockExceptionIfThrowExceptionIsTrue() throws Exception
     {
         // given

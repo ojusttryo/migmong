@@ -19,7 +19,7 @@ import com.github.fakemongo.Fongo;
 import com.github.ojusttryo.migmong.resources.EnvironmentMock;
 import com.github.ojusttryo.migmong.test.changelogs.AnotherMongobeeTestResource;
 import com.github.ojusttryo.migmong.test.profiles.def.UnProfiledChangeLog;
-import com.github.ojusttryo.migmong.changeset.ChangeEntry;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.github.ojusttryo.migmong.dao.ChangeEntryDao;
 import com.github.ojusttryo.migmong.dao.ChangeEntryIndexDao;
 import com.mongodb.DB;
@@ -33,12 +33,12 @@ import com.mongodb.client.MongoDatabase;
  * @since 2014-09-17
  */
 @RunWith(MockitoJUnitRunner.class)
-public class MigMongProfileTest
+public class MongoMigrationProfileTest
 {
     public static final int CHANGELOG_COUNT = 13;
     private static final String CHANGELOG_COLLECTION_NAME = "dbchangelog";
     @InjectMocks
-    private MigMong runner = new MigMong();
+    private MongoMigration runner = new MongoMigration();
 
     @Mock
     private ChangeEntryDao dao;
@@ -69,11 +69,11 @@ public class MigMongProfileTest
                 .thenReturn(fakeMongoDatabase);
         when(dao.getMongoDatabase()).thenReturn(fakeMongoDatabase);
         when(dao.acquireProcessLock()).thenReturn(true);
-        doCallRealMethod().when(dao).save(any(ChangeEntry.class));
-        doCallRealMethod().when(dao).setChangelogCollectionName(anyString());
+        doCallRealMethod().when(dao).save(any(MigrationEntry.class));
+        doCallRealMethod().when(dao).setMigrationCollectionName(anyString());
         doCallRealMethod().when(dao).setIndexDao(any(ChangeEntryIndexDao.class));
         dao.setIndexDao(indexDao);
-        dao.setChangelogCollectionName(CHANGELOG_COLLECTION_NAME);
+        dao.setMigrationCollectionName(CHANGELOG_COLLECTION_NAME);
 
         runner.setDbName("mongobeetest");
         runner.setEnabled(true);
@@ -86,8 +86,8 @@ public class MigMongProfileTest
     {
         // given
         runner.setSpringEnvironment(new EnvironmentMock("dev"));
-        runner.setChangeLogsScanPackage(AnotherMongobeeTestResource.class.getPackage().getName());
-        when(dao.isNewChange(any(ChangeEntry.class))).thenReturn(true);
+        runner.setMigrationScanPackage(AnotherMongobeeTestResource.class.getPackage().getName());
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
 
         // when
         runner.execute();
@@ -103,8 +103,8 @@ public class MigMongProfileTest
     {
         // given
         runner.setSpringEnvironment(new EnvironmentMock());
-        runner.setChangeLogsScanPackage(AnotherMongobeeTestResource.class.getPackage().getName());
-        when(dao.isNewChange(any(ChangeEntry.class))).thenReturn(true);
+        runner.setMigrationScanPackage(AnotherMongobeeTestResource.class.getPackage().getName());
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
 
         // when
         runner.execute();
@@ -120,8 +120,8 @@ public class MigMongProfileTest
     {
         // given
         runner.setSpringEnvironment(null);
-        runner.setChangeLogsScanPackage(AnotherMongobeeTestResource.class.getPackage().getName());
-        when(dao.isNewChange(any(ChangeEntry.class))).thenReturn(true);
+        runner.setMigrationScanPackage(AnotherMongobeeTestResource.class.getPackage().getName());
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
 
         // when
         runner.execute();
@@ -137,8 +137,8 @@ public class MigMongProfileTest
     {
         // given
         runner.setSpringEnvironment(new EnvironmentMock("test"));
-        runner.setChangeLogsScanPackage(UnProfiledChangeLog.class.getPackage().getName());
-        when(dao.isNewChange(any(ChangeEntry.class))).thenReturn(true);
+        runner.setMigrationScanPackage(UnProfiledChangeLog.class.getPackage().getName());
+        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
 
         // when
         runner.execute();
@@ -146,27 +146,27 @@ public class MigMongProfileTest
         // then
         long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
                 .countDocuments(new Document()
-                        .append(ChangeEntry.CHANGE_ID, 1));
+                        .append(MigrationEntry.CHANGE_ID, 1));
         assertEquals(1, change1);
 
         long change2 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
                 .countDocuments(new Document()
-                        .append(ChangeEntry.CHANGE_ID, 2));
+                        .append(MigrationEntry.CHANGE_ID, 2));
         assertEquals(1, change2);
 
         long change3 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
                 .countDocuments(new Document()
-                        .append(ChangeEntry.CHANGE_ID, 3));
+                        .append(MigrationEntry.CHANGE_ID, 3));
         assertEquals(1, change3);  //  @Profile("dev")  should not match
 
         long change4 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
                 .countDocuments(new Document()
-                        .append(ChangeEntry.CHANGE_ID, 4));
+                        .append(MigrationEntry.CHANGE_ID, 4));
         assertEquals(0, change4);  //  @Profile("pro")  should not match
 
         long change5 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME)
                 .countDocuments(new Document()
-                        .append(ChangeEntry.CHANGE_ID, 5));
+                        .append(MigrationEntry.CHANGE_ID, 5));
         assertEquals(1, change5);  //  @Profile("!pro")  should match
     }
 

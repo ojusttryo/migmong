@@ -8,11 +8,10 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.ojusttryo.migmong.exception.MigMongLockException;
-import com.github.ojusttryo.migmong.changeset.ChangeEntry;
-import com.github.ojusttryo.migmong.exception.MigMongConfigurationException;
-import com.github.ojusttryo.migmong.exception.MigMongConnectionException;
-import com.mongodb.DB;
+import com.github.ojusttryo.migmong.exception.MigrationLockException;
+import com.github.ojusttryo.migmong.exception.MigrationConfigurationException;
+import com.github.ojusttryo.migmong.exception.MigrationConnectionException;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -29,7 +28,7 @@ public class ChangeEntryDao
     private MongoDatabase mongoDatabase;
     private MongoClient mongoClient;
     private ChangeEntryIndexDao indexDao;
-    private String changelogCollectionName;
+    private String migrationCollectionName;
     private boolean waitForLock;
     private long changeLogLockWaitTime;
     private long changeLogLockPollRate;
@@ -38,12 +37,12 @@ public class ChangeEntryDao
     private LockDao lockDao;
 
 
-    public ChangeEntryDao(String changelogCollectionName, String lockCollectionName, boolean waitForLock,
+    public ChangeEntryDao(String migrationCollectionName, String lockCollectionName, boolean waitForLock,
             long changeLogLockWaitTime, long changeLogLockPollRate, boolean throwExceptionIfCannotObtainLock)
     {
-        this.indexDao = new ChangeEntryIndexDao(changelogCollectionName);
+        this.indexDao = new ChangeEntryIndexDao(migrationCollectionName);
         this.lockDao = new LockDao(lockCollectionName);
-        this.changelogCollectionName = changelogCollectionName;
+        this.migrationCollectionName = migrationCollectionName;
         this.waitForLock = waitForLock;
         this.changeLogLockWaitTime = changeLogLockWaitTime;
         this.changeLogLockPollRate = changeLogLockPollRate;
@@ -55,10 +54,10 @@ public class ChangeEntryDao
      * Try to acquire process lock
      *
      * @return true if successfully acquired, false otherwise
-     * @throws MigMongConnectionException exception
-     * @throws MigMongLockException exception
+     * @throws MigrationConnectionException exception
+     * @throws MigrationLockException exception
      */
-    public boolean acquireProcessLock() throws MigMongConnectionException, MigMongLockException
+    public boolean acquireProcessLock() throws MigrationConnectionException, MigrationLockException
     {
         verifyDbConnection();
         boolean acquired = lockDao.acquireLock(getMongoDatabase());
@@ -86,8 +85,8 @@ public class ChangeEntryDao
 
         if (!acquired && throwExceptionIfCannotObtainLock)
         {
-            logger.info("MigMong did not acquire process lock. Throwing exception.");
-            throw new MigMongLockException("Could not acquire process lock");
+            logger.info("MongoMigration did not acquire process lock. Throwing exception.");
+            throw new MigrationLockException("Could not acquire process lock");
         }
 
         return acquired;
@@ -100,32 +99,27 @@ public class ChangeEntryDao
     }
 
 
-    public MongoDatabase connectMongoDb(MongoClient mongo, String dbName) throws MigMongConfigurationException
+    public MongoDatabase connectMongoDb(MongoClient mongo, String dbName) throws MigrationConfigurationException
     {
         if (!hasText(dbName))
-        {
-            throw new MigMongConfigurationException(
-                    "DB name is not set. Should be defined in MongoDB URI or via setter");
-        }
-        else
-        {
+            throw new MigrationConfigurationException("Database name is not set");
 
-            this.mongoClient = mongo;
-            mongoDatabase = mongo.getDatabase(dbName);
+        this.mongoClient = mongo;
+        mongoDatabase = mongo.getDatabase(dbName);
 
-            ensureChangeLogCollectionIndex(mongoDatabase.getCollection(changelogCollectionName));
-            initializeLock();
-            return mongoDatabase;
-        }
+        ensureChangeLogCollectionIndex(mongoDatabase.getCollection(migrationCollectionName));
+        initializeLock();
+        return mongoDatabase;
     }
 
 
     public MongoDatabase connectMongoDb(MongoClientURI mongoClientURI, String dbName)
-            throws MigMongConfigurationException
+            throws MigrationConfigurationException
     {
 
         final MongoClient mongoClient = new MongoClient(mongoClientURI);
         final String database = (!hasText(dbName)) ? mongoClientURI.getDatabase() : dbName;
+
         return this.connectMongoDb(mongoClient, database);
     }
 
@@ -148,18 +142,18 @@ public class ChangeEntryDao
     }
 
 
-    public boolean isNewChange(ChangeEntry changeEntry) throws MigMongConnectionException
+    public boolean isNewMigrationUnit(MigrationEntry migrationEntry) throws MigrationConnectionException
     {
         verifyDbConnection();
 
-        MongoCollection<Document> mongobeeChangeLog = getMongoDatabase().getCollection(changelogCollectionName);
-        Document entry = mongobeeChangeLog.find(changeEntry.buildSearchQueryDBObject()).first();
+        MongoCollection<Document> mongobeeChangeLog = getMongoDatabase().getCollection(migrationCollectionName);
+        Document entry = mongobeeChangeLog.find(migrationEntry.buildSearchQueryDBObject()).first();
 
         return entry == null;
     }
 
 
-    public boolean isProccessLockHeld() throws MigMongConnectionException
+    public boolean isProccessLockHeld() throws MigrationConnectionException
     {
         verifyDbConnection();
         return lockDao.isLockHeld(getMongoDatabase());
@@ -178,19 +172,19 @@ public class ChangeEntryDao
     }
 
 
-    public void releaseProcessLock() throws MigMongConnectionException
+    public void releaseProcessLock() throws MigrationConnectionException
     {
         verifyDbConnection();
         lockDao.releaseLock(getMongoDatabase());
     }
 
 
-    public void save(ChangeEntry changeEntry) throws MigMongConnectionException
+    public void save(MigrationEntry migrationEntry) throws MigrationConnectionException
     {
         verifyDbConnection();
 
-        MongoCollection<Document> migMong = getMongoDatabase().getCollection(changelogCollectionName);
-        migMong.insertOne(changeEntry.buildFullDBObject());
+        MongoCollection<Document> migMong = getMongoDatabase().getCollection(migrationCollectionName);
+        migMong.insertOne(migrationEntry.buildFullDBObject());
     }
 
 
@@ -206,10 +200,10 @@ public class ChangeEntryDao
     }
 
 
-    public void setChangelogCollectionName(String changelogCollectionName)
+    public void setMigrationCollectionName(String migrationCollectionName)
     {
-        this.indexDao.setChangelogCollectionName(changelogCollectionName);
-        this.changelogCollectionName = changelogCollectionName;
+        this.indexDao.setChangelogCollectionName(migrationCollectionName);
+        this.migrationCollectionName = migrationCollectionName;
     }
 
 
@@ -250,13 +244,13 @@ public class ChangeEntryDao
         if (index == null)
         {
             indexDao.createRequiredUniqueIndex(collection);
-            logger.debug("Index in collection " + changelogCollectionName + " was created");
+            logger.debug("Index in collection " + migrationCollectionName + " was created");
         }
         else if (!indexDao.isUnique(index))
         {
             indexDao.dropIndex(collection, index);
             indexDao.createRequiredUniqueIndex(collection);
-            logger.debug("Index in collection " + changelogCollectionName + " was recreated");
+            logger.debug("Index in collection " + migrationCollectionName + " was recreated");
         }
 
     }
@@ -268,11 +262,11 @@ public class ChangeEntryDao
     }
 
 
-    private void verifyDbConnection() throws MigMongConnectionException
+    private void verifyDbConnection() throws MigrationConnectionException
     {
         if (getMongoDatabase() == null)
         {
-            throw new MigMongConnectionException("Database is not connected. MigMong has thrown an unexpected error",
+            throw new MigrationConnectionException("Database is not connected. MongoMigration has thrown an unexpected error",
                     new NullPointerException());
         }
     }

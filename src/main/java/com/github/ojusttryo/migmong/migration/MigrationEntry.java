@@ -1,4 +1,4 @@
-package com.github.ojusttryo.migmong.changeset;
+package com.github.ojusttryo.migmong.migration;
 
 import java.util.Date;
 
@@ -12,7 +12,7 @@ import org.bson.Document;
  * @author lstolowski
  * @since 27/07/2014
  */
-public class ChangeEntry
+public class MigrationEntry
 {
     public static final String CHANGE_ID = "changeId";
     public static final String TIMESTAMP = "timestamp";
@@ -25,7 +25,7 @@ public class ChangeEntry
     private String changeSetMethodName;
 
 
-    public ChangeEntry(int changeId, Date timestamp, String changeLogClass, String changeSetMethodName)
+    public MigrationEntry(int changeId, Date timestamp, String changeLogClass, String changeSetMethodName)
     {
         this.changeId = changeId;
         this.timestamp = new Date(timestamp.getTime());
@@ -50,7 +50,8 @@ public class ChangeEntry
     public Document buildSearchQueryDBObject()
     {
         return new Document()
-                .append(CHANGE_ID, this.changeId);
+                .append(CHANGE_ID, this.changeId)
+                .append(CHANGE_LOG_CLASS, this.changeLogClass);
     }
 
 
@@ -81,7 +82,7 @@ public class ChangeEntry
     @Override
     public String toString()
     {
-        return "[ChangeSet: id=" + this.changeId +
+        return "[MigrationUnit: id=" + this.changeId +
                 ", changeLogClass=" + this.changeLogClass +
                 ", changeSetMethod=" + this.changeSetMethodName + "]";
     }
