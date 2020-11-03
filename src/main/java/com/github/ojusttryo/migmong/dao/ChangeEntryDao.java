@@ -30,22 +30,22 @@ public class ChangeEntryDao
     private ChangeEntryIndexDao indexDao;
     private String migrationCollectionName;
     private boolean waitForLock;
-    private long changeLogLockWaitTime;
-    private long changeLogLockPollRate;
+    private long migrationLockWaitTime;
+    private long migrationLockPollRate;
     private boolean throwExceptionIfCannotObtainLock;
 
     private LockDao lockDao;
 
 
     public ChangeEntryDao(String migrationCollectionName, String lockCollectionName, boolean waitForLock,
-            long changeLogLockWaitTime, long changeLogLockPollRate, boolean throwExceptionIfCannotObtainLock)
+            long migrationLockWaitTime, long migrationLockPollRate, boolean throwExceptionIfCannotObtainLock)
     {
         this.indexDao = new ChangeEntryIndexDao(migrationCollectionName);
         this.lockDao = new LockDao(lockCollectionName);
         this.migrationCollectionName = migrationCollectionName;
         this.waitForLock = waitForLock;
-        this.changeLogLockWaitTime = changeLogLockWaitTime;
-        this.changeLogLockPollRate = changeLogLockPollRate;
+        this.migrationLockWaitTime = migrationLockWaitTime;
+        this.migrationLockPollRate = migrationLockPollRate;
         this.throwExceptionIfCannotObtainLock = throwExceptionIfCannotObtainLock;
     }
 
@@ -64,16 +64,16 @@ public class ChangeEntryDao
 
         if (!acquired && waitForLock)
         {
-            long timeToGiveUp = new Date().getTime() + (changeLogLockWaitTime * 1000 * 60);
+            long timeToGiveUp = new Date().getTime() + (migrationLockWaitTime * 1000 * 60);
             while (!acquired && new Date().getTime() < timeToGiveUp)
             {
                 acquired = lockDao.acquireLock(getMongoDatabase());
                 if (!acquired)
                 {
-                    logger.info("Waiting for changelog lock....");
+                    logger.info("Waiting for migration lock....");
                     try
                     {
-                        Thread.sleep(changeLogLockPollRate * 1000);
+                        Thread.sleep(migrationLockPollRate * 1000);
                     }
                     catch (InterruptedException e)
                     {
@@ -107,7 +107,7 @@ public class ChangeEntryDao
         this.mongoClient = mongo;
         mongoDatabase = mongo.getDatabase(dbName);
 
-        ensureChangeLogCollectionIndex(mongoDatabase.getCollection(migrationCollectionName));
+        ensureMigrationCollectionIndex(mongoDatabase.getCollection(migrationCollectionName));
         initializeLock();
         return mongoDatabase;
     }
@@ -124,15 +124,15 @@ public class ChangeEntryDao
     }
 
 
-    public long getChangeLogLockPollRate()
+    public long getMigrationLockPollRate()
     {
-        return changeLogLockPollRate;
+        return migrationLockPollRate;
     }
 
 
-    public long getChangeLogLockWaitTime()
+    public long getMigrationLockWaitTime()
     {
-        return changeLogLockWaitTime;
+        return migrationLockWaitTime;
     }
 
 
@@ -146,8 +146,8 @@ public class ChangeEntryDao
     {
         verifyDbConnection();
 
-        MongoCollection<Document> mongobeeChangeLog = getMongoDatabase().getCollection(migrationCollectionName);
-        Document entry = mongobeeChangeLog.find(migrationEntry.buildSearchQueryDBObject()).first();
+        MongoCollection<Document> migrationCollection = getMongoDatabase().getCollection(migrationCollectionName);
+        Document entry = migrationCollection.find(migrationEntry.buildSearchQueryDBObject()).first();
 
         return entry == null;
     }
@@ -188,21 +188,21 @@ public class ChangeEntryDao
     }
 
 
-    public void setChangeLogLockPollRate(long changeLogLockPollRate)
+    public void setMigrationLockPollRate(long migrationLockPollRate)
     {
-        this.changeLogLockPollRate = changeLogLockPollRate;
+        this.migrationLockPollRate = migrationLockPollRate;
     }
 
 
-    public void setChangeLogLockWaitTime(long changeLogLockWaitTime)
+    public void setMigrationLockWaitTime(long migrationLockWaitTime)
     {
-        this.changeLogLockWaitTime = changeLogLockWaitTime;
+        this.migrationLockWaitTime = migrationLockWaitTime;
     }
 
 
     public void setMigrationCollectionName(String migrationCollectionName)
     {
-        this.indexDao.setChangelogCollectionName(migrationCollectionName);
+        this.indexDao.setMigrationCollection(migrationCollectionName);
         this.migrationCollectionName = migrationCollectionName;
     }
 
@@ -238,9 +238,9 @@ public class ChangeEntryDao
     }
 
 
-    private void ensureChangeLogCollectionIndex(MongoCollection<Document> collection)
+    private void ensureMigrationCollectionIndex(MongoCollection<Document> collection)
     {
-        Document index = indexDao.findRequiredChangeAndAuthorIndex(mongoDatabase);
+        Document index = indexDao.findRequiredIndex(mongoDatabase);
         if (index == null)
         {
             indexDao.createRequiredUniqueIndex(collection);

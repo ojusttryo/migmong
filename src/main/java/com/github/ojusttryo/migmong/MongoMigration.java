@@ -45,8 +45,8 @@ public class MongoMigration implements InitializingBean
     private static final String DEFAULT_MIGRATION_COLLECTION_NAME = "migration_log";
     private static final String DEFAULT_LOCK_COLLECTION_NAME = "migration_lock";
     private static final boolean DEFAULT_WAIT_FOR_LOCK = false;
-    private static final long DEFAULT_CHANGE_LOG_LOCK_WAIT_TIME = 5L;
-    private static final long DEFAULT_CHANGE_LOG_LOCK_POLL_RATE = 10L;
+    private static final long DEFAULT_MIGRATION_LOCK_WAIT_TIME = 5L;
+    private static final long DEFAULT_MIGRATION_LOCK_POLL_RATE = 10L;
     private static final boolean DEFAULT_THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK = false;
 
     private ChangeEntryDao dao;
@@ -59,6 +59,7 @@ public class MongoMigration implements InitializingBean
     private MongoClient mongoClient;
     private MigrationContext migrationContext = new MigrationContext();
     private Version applicationVersion = new Version();
+    private String migrationPrefix = "V";
 
 
     /**
@@ -222,6 +223,22 @@ public class MongoMigration implements InitializingBean
 
 
     /**
+     * Sets prefix for migration names. Default is 'V'.
+     * <p>Examples:</p>
+     * <ul>
+     * <li>Migration V1_1_1__something has prefix 'V'</li>
+     * <li>Migration V_1_2__doStuff has prefix 'V_'</li>
+     * <li>etc.</li>
+     * </ul>
+     * @param prefix prefix for migration name
+     */
+    public void setMigrationNamePrefix(String prefix)
+    {
+        this.migrationPrefix = prefix;
+    }
+
+
+    /**
      * Sets application version to limit migration. Migrations higher than this version are ignored.
      * @param version version. Might contains from 1 to 3 numbers (major, minor, build)
      * @param delimiter delimiter for numbers in version
@@ -252,29 +269,29 @@ public class MongoMigration implements InitializingBean
 
     /**
      * Poll rate for acquiring lock if waitForLock is true
-     * @param changeLogLockPollRate Poll rate in seconds for acquiring lock
+     * @param migrationLockPollRate Poll rate in seconds for acquiring lock
      */
-    public MongoMigration setChangeLogLockPollRate(long changeLogLockPollRate)
+    public MongoMigration setMigrationLockPollRate(long migrationLockPollRate)
     {
-        this.dao.setChangeLogLockPollRate(changeLogLockPollRate);
+        this.dao.setMigrationLockPollRate(migrationLockPollRate);
         return this;
     }
 
 
     /**
      * Waiting time for acquiring lock if waitForLock is true
-     * @param changeLogLockWaitTime Waiting time in minutes for acquiring lock
+     * @param migrationLockWaitTime Waiting time in minutes for acquiring lock
      */
-    public MongoMigration setChangeLogLockWaitTime(long changeLogLockWaitTime)
+    public MongoMigration setMigrationLockWaitTime(long migrationLockWaitTime)
     {
-        this.dao.setChangeLogLockWaitTime(changeLogLockWaitTime);
+        this.dao.setMigrationLockWaitTime(migrationLockWaitTime);
         return this;
     }
 
 
     /**
      * Package name where {@link Migration}-annotated classes are kept.
-     * @param migrationScanPackage package where your changelogs are
+     * @param migrationScanPackage package where your migrations are
      */
     public MongoMigration setMigrationScanPackage(String migrationScanPackage)
     {
@@ -398,9 +415,9 @@ public class MongoMigration implements InitializingBean
 
     private void executeMigration() throws MigrationException
     {
-        MigrationService service = new MigrationService(migrationScanPackage, migrationContext.getSpringEnvironment());
+        MigrationService service = new MigrationService(migrationScanPackage);
 
-        for (MigrationInfo migrationInfo : service.fetchMigrations(applicationVersion))
+        for (MigrationInfo migrationInfo : service.fetchMigrations(applicationVersion, migrationPrefix))
         {
             try
             {
@@ -464,7 +481,7 @@ public class MongoMigration implements InitializingBean
         }
         if (!hasText(migrationScanPackage))
         {
-            throw new MigrationConfigurationException("Scan package for change logs is not set: use appropriate setter");
+            throw new MigrationConfigurationException("Scan package for migrations is not set: use appropriate setter");
         }
     }
 
@@ -473,7 +490,7 @@ public class MongoMigration implements InitializingBean
     {
         return new ChangeEntryDao(DEFAULT_MIGRATION_COLLECTION_NAME, DEFAULT_LOCK_COLLECTION_NAME,
                 DEFAULT_WAIT_FOR_LOCK,
-                DEFAULT_CHANGE_LOG_LOCK_WAIT_TIME, DEFAULT_CHANGE_LOG_LOCK_POLL_RATE,
+                DEFAULT_MIGRATION_LOCK_WAIT_TIME, DEFAULT_MIGRATION_LOCK_POLL_RATE,
                 DEFAULT_THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK);
     }
 }

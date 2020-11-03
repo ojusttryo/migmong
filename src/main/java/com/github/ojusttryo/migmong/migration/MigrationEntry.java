@@ -16,21 +16,21 @@ public class MigrationEntry
 {
     public static final String CHANGE_ID = "changeId";
     public static final String TIMESTAMP = "timestamp";
-    public static final String CHANGE_LOG_CLASS = "changeLogClass";
-    public static final String CHANGE_SET_METHOD = "changeSetMethod";
+    public static final String MIGRATION_CLASS = "migrationClass";
+    public static final String MIGRATION_UNIT = "migrationUnit";
 
     private int changeId;
     private Date timestamp;
-    private String changeLogClass;
-    private String changeSetMethodName;
+    private String migrationClass;
+    private String migrationUnit;
 
 
-    public MigrationEntry(int changeId, Date timestamp, String changeLogClass, String changeSetMethodName)
+    public MigrationEntry(int changeId, Date timestamp, String migrationClass, String migrationUnit)
     {
         this.changeId = changeId;
         this.timestamp = new Date(timestamp.getTime());
-        this.changeLogClass = changeLogClass;
-        this.changeSetMethodName = changeSetMethodName;
+        this.migrationClass = migrationClass;
+        this.migrationUnit = migrationUnit;
     }
 
 
@@ -40,8 +40,8 @@ public class MigrationEntry
 
         entry.append(CHANGE_ID, this.changeId)
                 .append(TIMESTAMP, this.timestamp)
-                .append(CHANGE_LOG_CLASS, this.changeLogClass)
-                .append(CHANGE_SET_METHOD, this.changeSetMethodName);
+                .append(MIGRATION_CLASS, this.migrationClass)
+                .append(MIGRATION_UNIT, this.migrationUnit);
 
         return entry;
     }
@@ -51,7 +51,7 @@ public class MigrationEntry
     {
         return new Document()
                 .append(CHANGE_ID, this.changeId)
-                .append(CHANGE_LOG_CLASS, this.changeLogClass);
+                .append(MIGRATION_CLASS, this.migrationClass);
     }
 
 
@@ -61,15 +61,15 @@ public class MigrationEntry
     }
 
 
-    public String getChangeLogClass()
+    public String getMigrationClass()
     {
-        return this.changeLogClass;
+        return this.migrationClass;
     }
 
 
-    public String getChangeSetMethodName()
+    public String getMigrationUnit()
     {
-        return this.changeSetMethodName;
+        return this.migrationUnit;
     }
 
 
@@ -83,8 +83,8 @@ public class MigrationEntry
     public String toString()
     {
         return "[MigrationUnit: id=" + this.changeId +
-                ", changeLogClass=" + this.changeLogClass +
-                ", changeSetMethod=" + this.changeSetMethodName + "]";
+                ", migrationClass=" + this.migrationClass +
+                ", migrationUnit=" + this.migrationUnit + "]";
     }
 
 }

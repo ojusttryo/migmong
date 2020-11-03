@@ -11,15 +11,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.reflections.Reflections;
-import org.springframework.core.env.Environment;
 
+import com.github.ojusttryo.migmong.exception.MigrationException;
 import com.github.ojusttryo.migmong.exception.MigrationUnitException;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
+import com.github.ojusttryo.migmong.migration.MigrationInfo;
 import com.github.ojusttryo.migmong.migration.Version;
 import com.github.ojusttryo.migmong.migration.annotations.Migration;
 import com.github.ojusttryo.migmong.migration.annotations.MigrationUnit;
-import com.github.ojusttryo.migmong.migration.MigrationInfo;
-import com.github.ojusttryo.migmong.migration.MigrationEntry;
-import com.github.ojusttryo.migmong.exception.MigrationException;
 
 /**
  * Utilities to deal with reflections and annotations
@@ -31,25 +30,13 @@ public class MigrationService
 {
     private static final String DEFAULT_PROFILE = "default";
 
-    private final String changeLogsBasePackage;
-    private final List<String> activeProfiles;
+    private final String migrationsBasePackage;
 
 
-    public MigrationService(String changeLogsBasePackage)
+
+    public MigrationService(String migrationsBasePackage)
     {
-        this(changeLogsBasePackage, null);
-    }
-
-
-    public MigrationService(String changeLogsBasePackage, Environment environment)
-    {
-        this.changeLogsBasePackage = changeLogsBasePackage;
-
-        if (environment != null && environment.getActiveProfiles() != null
-                && environment.getActiveProfiles().length > 0)
-            this.activeProfiles = asList(environment.getActiveProfiles());
-        else
-            this.activeProfiles = asList(DEFAULT_PROFILE);
+        this.migrationsBasePackage = migrationsBasePackage;
     }
 
 
@@ -70,14 +57,22 @@ public class MigrationService
     }
 
 
-    public List<MigrationInfo> fetchMigrations(Version applicationVersion) throws MigrationException
+    public List<MigrationInfo> fetchMigrations(Version applicationVersion, String prefix) throws MigrationException
     {
-        Reflections reflections = new Reflections(changeLogsBasePackage);
+        Reflections reflections = new Reflections(migrationsBasePackage);
         List<MigrationInfo> migrations = new ArrayList<>();
         List<Class<?>> migrationClasses = new ArrayList<>(reflections.getTypesAnnotatedWith(Migration.class));
         for (Class<?> migrationClass : migrationClasses)
         {
-            MigrationInfo migrationInfo = new MigrationInfo(migrationClass);
+            // When we search for migrations in a package, reflection returns not only classes from it,
+            // but also from similar ones. E.g. if we set package name as 'x.y.migrations', reflection will have also
+            // found classes from 'x.y.migrationsFromAnotherPackage'
+            boolean hasRightPackage = migrationClass.getPackageName().contentEquals(migrationsBasePackage);
+            boolean hasRightPrefix = migrationClass.getSimpleName().startsWith(prefix);
+            if (!hasRightPrefix || !hasRightPackage)
+                continue;
+
+            MigrationInfo migrationInfo = new MigrationInfo(migrationClass, prefix);
             // Add only versions lower or equal to current application version
             if (migrationInfo.getVersion().compareTo(applicationVersion) <= 0)
                 migrations.add(migrationInfo);
@@ -89,38 +84,38 @@ public class MigrationService
 
     public List<Method> fetchMigrationUnits(final Class<?> type) throws MigrationUnitException
     {
-        final List<Method> changeSets = filterChangeSetAnnotation(asList(type.getDeclaredMethods()));
-        Collections.sort(changeSets, new ChangeSetComparator());
-        return changeSets;
+        final List<Method> migrationUnits = filterMigrationUnitAnnotation(asList(type.getDeclaredMethods()));
+        Collections.sort(migrationUnits, new MigrationUnitComparator());
+        return migrationUnits;
     }
 
 
-    public boolean isAlwaysRunnableMigration(Method changesetMethod)
+    public boolean isAlwaysRunnableMigration(Method migrationUnitMethod)
     {
-        if (!changesetMethod.isAnnotationPresent(MigrationUnit.class))
+        if (!migrationUnitMethod.isAnnotationPresent(MigrationUnit.class))
             return false;
 
-        MigrationUnit annotation = changesetMethod.getAnnotation(MigrationUnit.class);
+        MigrationUnit annotation = migrationUnitMethod.getAnnotation(MigrationUnit.class);
         return annotation.runAlways();
     }
 
 
-    private List<Method> filterChangeSetAnnotation(List<Method> allMethods) throws MigrationUnitException
+    private List<Method> filterMigrationUnitAnnotation(List<Method> allMethods) throws MigrationUnitException
     {
-        final Set<Integer> changeSetIds = new HashSet<>();
-        final List<Method> changeSetMethods = new ArrayList<>();
+        final Set<Integer> migrationUnitIds = new HashSet<>();
+        final List<Method> migrationUnitMethods = new ArrayList<>();
         for (final Method method : allMethods)
         {
             if (method.isAnnotationPresent(MigrationUnit.class))
             {
                 int id = method.getAnnotation(MigrationUnit.class).id();
-                if (changeSetIds.contains(id))
+                if (migrationUnitIds.contains(id))
                     throw new MigrationUnitException(String.format("Duplicated MigrationUnit id found: '%s'", id));
 
-                changeSetIds.add(id);
-                changeSetMethods.add(method);
+                migrationUnitIds.add(id);
+                migrationUnitMethods.add(method);
             }
         }
-        return changeSetMethods;
+        return migrationUnitMethods;
     }
 }

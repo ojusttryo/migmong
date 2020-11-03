@@ -1,6 +1,6 @@
 package com.github.ojusttryo.migmong.utils;
 
-import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
 import java.lang.reflect.Method;
@@ -8,120 +8,101 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.github.ojusttryo.migmong.exception.MigrationUnitException;
 import com.github.ojusttryo.migmong.exception.MigrationException;
+import com.github.ojusttryo.migmong.exception.MigrationUnitException;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.github.ojusttryo.migmong.migration.MigrationInfo;
 import com.github.ojusttryo.migmong.migration.Version;
-import com.github.ojusttryo.migmong.test.changelogs.AnotherMongobeeTestResource;
-import com.github.ojusttryo.migmong.test.changelogs.MongobeeTestResource;
-import com.github.ojusttryo.migmong.migration.MigrationEntry;
+import com.github.ojusttryo.migmong.migrations.V_0_9__anotherMigrations;
+import com.github.ojusttryo.migmong.migrations.V_1__migrations;
+import com.github.ojusttryo.migmong.migrationWithDuplicates.V_0_1_5__withDuplicates;
 
 import junit.framework.Assert;
 
 /**
+ *
  * @author lstolowski
  * @since 27/07/2014
  */
 public class MigrationServiceTest
 {
-
     @Test
     public void shouldCreateEntry() throws MigrationUnitException
     {
-
-        // given
-        String scanPackage = MongobeeTestResource.class.getPackage().getName();
+        String scanPackage = V_1__migrations.class.getPackage().getName();
         MigrationService service = new MigrationService(scanPackage);
-        List<Method> foundMethods = service.fetchMigrationUnits(MongobeeTestResource.class);
+        List<Method> foundMethods = service.fetchMigrationUnits(V_1__migrations.class);
 
         for (Method foundMethod : foundMethods)
         {
-
-            // when
             MigrationEntry entry = service.createMigrationEntry(foundMethod);
 
-            // then
-            Assert.assertEquals(MongobeeTestResource.class.getName(), entry.getChangeLogClass());
+            Assert.assertEquals(V_1__migrations.class.getSimpleName(), entry.getMigrationClass());
             Assert.assertNotNull(entry.getTimestamp());
             Assert.assertNotNull(entry.getChangeId());
-            Assert.assertNotNull(entry.getChangeSetMethodName());
+            Assert.assertNotNull(entry.getMigrationUnit());
         }
     }
 
 
     @Test(expected = MigrationUnitException.class)
-    public void shouldFailOnDuplicatedChangeSets() throws MigrationUnitException
+    public void shouldFailOnDuplicatedMigrationUnits() throws MigrationUnitException
     {
-        String scanPackage = ChangeLogWithDuplicate.class.getPackage().getName();
+        String scanPackage = V_0_1_5__withDuplicates.class.getPackage().getName();
         MigrationService service = new MigrationService(scanPackage);
-        service.fetchMigrationUnits(ChangeLogWithDuplicate.class);
+        service.fetchMigrationUnits(V_0_1_5__withDuplicates.class);
     }
 
 
     @Test
-    public void shouldFindAnotherChangeSetMethods() throws MigrationUnitException
+    public void shouldFindMigrationClasses() throws MigrationException
     {
-        // given
-        String scanPackage = MongobeeTestResource.class.getPackage().getName();
+        String scanPackage = V_1__migrations.class.getPackage().getName();
         MigrationService service = new MigrationService(scanPackage);
 
-        // when
-        List<Method> foundMethods = service.fetchMigrationUnits(AnotherMongobeeTestResource.class);
+        List<MigrationInfo> foundMigrations = service.fetchMigrations(new Version(1), "V_");
 
-        // then
-        assertTrue(foundMethods != null && foundMethods.size() == 6);
-    }
-
-
-    @Test
-    public void shouldFindChangeLogClasses() throws MigrationException
-    {
-        // given
-        String scanPackage = MongobeeTestResource.class.getPackage().getName();
-        MigrationService service = new MigrationService(scanPackage);
-        // when
-        List<MigrationInfo> foundMigrations = service.fetchMigrations(new Version(1, 1, 1));
-        // then
         assertTrue(foundMigrations != null && foundMigrations.size() > 0);
     }
 
 
     @Test
-    public void shouldFindChangeSetMethods() throws MigrationUnitException
+    public void shouldFindMigrationUnits() throws MigrationUnitException
     {
-        // given
-        String scanPackage = MongobeeTestResource.class.getPackage().getName();
+        String scanPackage = V_1__migrations.class.getPackage().getName();
         MigrationService service = new MigrationService(scanPackage);
 
-        // when
-        List<Method> foundMethods = service.fetchMigrationUnits(MongobeeTestResource.class);
+        List<Method> foundMethods = service.fetchMigrationUnits(V_1__migrations.class);
 
-        // then
-        assertTrue(foundMethods != null && foundMethods.size() == 5);
+        assertTrue(foundMethods != null && foundMethods.size() == 4);
+    }
+
+
+    @Test
+    public void shouldFindAnotherMigrationUnits() throws MigrationUnitException
+    {
+        String scanPackage = V_1__migrations.class.getPackage().getName();
+        MigrationService service = new MigrationService(scanPackage);
+
+        List<Method> foundMethods = service.fetchMigrationUnits(V_0_9__anotherMigrations.class);
+
+        assertTrue(foundMethods != null && foundMethods.size() == 4);
     }
 
 
     @Test
     public void shouldFindIsRunAlwaysMethod() throws MigrationUnitException
     {
-        // given
-        String scanPackage = MongobeeTestResource.class.getPackage().getName();
+        String scanPackage = V_1__migrations.class.getPackage().getName();
         MigrationService service = new MigrationService(scanPackage);
 
-        // when
-        List<Method> foundMethods = service.fetchMigrationUnits(AnotherMongobeeTestResource.class);
-        // then
+        List<Method> foundMethods = service.fetchMigrationUnits(V_0_9__anotherMigrations.class);
+
         for (Method foundMethod : foundMethods)
         {
-            if (foundMethod.getName().equals("testChangeSetWithAlways"))
-            {
-                assertTrue(service.isAlwaysRunnableMigration(foundMethod));
-            }
-            else
-            {
-                assertFalse(service.isAlwaysRunnableMigration(foundMethod));
-            }
+            boolean unitIsAlwaysRunnable = foundMethod.getName().contains("withAlways");
+            boolean detectedAsAlwaysRunnable = service.isAlwaysRunnableMigration(foundMethod);
+            assertEquals(unitIsAlwaysRunnable, detectedAsAlwaysRunnable);
         }
     }
-
 }

@@ -14,12 +14,12 @@ import com.mongodb.client.model.IndexOptions;
 public class ChangeEntryIndexDao
 {
 
-    private String changelogCollectionName;
+    private String migrationCollection;
 
 
-    public ChangeEntryIndexDao(String changelogCollectionName)
+    public ChangeEntryIndexDao(String migrationCollection)
     {
-        this.changelogCollectionName = changelogCollectionName;
+        this.migrationCollection = migrationCollection;
     }
 
 
@@ -35,12 +35,12 @@ public class ChangeEntryIndexDao
     }
 
 
-    public Document findRequiredChangeAndAuthorIndex(MongoDatabase db)
+    public Document findRequiredIndex(MongoDatabase db)
     {
         MongoCollection<Document> indexes = db.getCollection("system.indexes");
         Document index = indexes
                 .find(new Document()
-                    .append("ns", db.getName() + "." + changelogCollectionName)
+                    .append("ns", db.getName() + "." + migrationCollection)
                     .append("key", new Document().append(MigrationEntry.CHANGE_ID, 1)))
                 .first();
 
@@ -55,9 +55,9 @@ public class ChangeEntryIndexDao
     }
 
 
-    public void setChangelogCollectionName(String changelogCollectionName)
+    public void setMigrationCollection(String migrationCollection)
     {
-        this.changelogCollectionName = changelogCollectionName;
+        this.migrationCollection = migrationCollection;
     }
 
 }

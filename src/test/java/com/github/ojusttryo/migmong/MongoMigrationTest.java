@@ -1,18 +1,17 @@
 package com.github.ojusttryo.migmong;
 
+import static com.github.ojusttryo.migmong.common.Constants.TEST_DB_NAME;
+import static com.github.ojusttryo.migmong.common.Constants.TEST_MIGRATION_COLLECTION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.util.Collections;
 
 import org.bson.Document;
 import org.junit.After;
@@ -22,26 +21,21 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.data.mongodb.core.MongoTemplate;
 
-import com.github.fakemongo.Fongo;
-import com.github.ojusttryo.migmong.exception.MigrationException;
-import com.github.ojusttryo.migmong.test.changelogs.MongobeeTestResource;
-import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.github.ojusttryo.migmong.dao.ChangeEntryDao;
 import com.github.ojusttryo.migmong.dao.ChangeEntryIndexDao;
 import com.github.ojusttryo.migmong.exception.MigrationConfigurationException;
-import com.mongodb.DB;
+import com.github.ojusttryo.migmong.exception.MigrationException;
+import com.github.ojusttryo.migmong.migration.MigrationEntry;
+import com.github.ojusttryo.migmong.migrations.V_1__migrations;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoDatabase;
 
 @RunWith(MockitoJUnitRunner.class)
-public class MongoMigrationTest
+public class MongoMigrationTest extends AbstractMigrationTest
 {
-
-    private static final String CHANGELOG_COLLECTION_NAME = "dbchangelog";
     @InjectMocks
-    private MongoMigration runner = new MongoMigration();
+    private MongoMigration migration = new MongoMigration();
 
     @Mock
     private ChangeEntryDao dao;
@@ -49,83 +43,83 @@ public class MongoMigrationTest
     @Mock
     private ChangeEntryIndexDao indexDao;
 
-    private DB fakeDb;
     private MongoDatabase fakeMongoDatabase;
 
 
     @After
     public void cleanUp()
     {
-        runner.setMongoTemplate(null);
-        fakeDb.dropDatabase();
+        migration.setMongoTemplate(null);
     }
 
 
     @Before
     public void init() throws MigrationException
     {
-        fakeDb = new Fongo("testServer").getDB("mongobeetest");
-        fakeMongoDatabase = new Fongo("testServer").getDatabase("mongobeetest");
-        when(dao.connectMongoDb(any(MongoClientURI.class), anyString()))
-                .thenReturn(fakeMongoDatabase);
+        fakeMongoDatabase = prepareFakeDatabase();
+        when(dao.connectMongoDb(any(MongoClientURI.class), anyString())).thenReturn(fakeMongoDatabase);
         when(dao.getMongoDatabase()).thenReturn(fakeMongoDatabase);
         doCallRealMethod().when(dao).save(any(MigrationEntry.class));
         doCallRealMethod().when(dao).setMigrationCollectionName(anyString());
         doCallRealMethod().when(dao).setIndexDao(any(ChangeEntryIndexDao.class));
         dao.setIndexDao(indexDao);
-        dao.setMigrationCollectionName(CHANGELOG_COLLECTION_NAME);
+        dao.setMigrationCollectionName(TEST_MIGRATION_COLLECTION);
 
-        runner.setDbName("mongobeetest");
-        runner.setEnabled(true);
-        runner.setMigrationScanPackage(MongobeeTestResource.class.getPackage().getName());
+        migration.setDbName(TEST_DB_NAME);
+        migration.setEnabled(true);
+        migration.setApplicationVersion("1.0.0", ".");
+        migration.setMigrationNamePrefix("V_");
+        migration.setMigrationScanPackage(V_1__migrations.class.getPackage().getName());
     }
 
 
     @Test
-    public void shouldExecuteAllChangeSets() throws Exception
+    public void shouldExecuteAllMigrationUnits() throws Exception
     {
-        // given
         when(dao.acquireProcessLock()).thenReturn(true);
         when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
 
-        // when
-        runner.execute();
+        migration.execute();
 
-        // then
-        verify(dao, times(13)).save(any(MigrationEntry.class)); // 13 changesets saved to dbchangelog
+        verify(dao, times(9)).save(any(MigrationEntry.class));
 
-        // dbchangelog collection checking
-        long change1 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(MigrationEntry.CHANGE_ID, 1));
-        assertEquals(1, change1);
-        long change2 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(MigrationEntry.CHANGE_ID, 2));
-        assertEquals(1, change2);
-        long change3 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(MigrationEntry.CHANGE_ID, 3));
-        assertEquals(1, change3);
-        long change4 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(MigrationEntry.CHANGE_ID, 4));
-        assertEquals(1, change4);
-        long change5 = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document()
-                .append(MigrationEntry.CHANGE_ID, 5));
-        assertEquals(1, change5);
+        long change1 = fakeMongoDatabase.getCollection(TEST_MIGRATION_COLLECTION)
+                .countDocuments(new Document().append(MigrationEntry.CHANGE_ID, 1));
+        assertEquals(2, change1);
 
-        long changeAll = fakeMongoDatabase.getCollection(CHANGELOG_COLLECTION_NAME).countDocuments(new Document());
-        assertEquals(12, changeAll);
+        long change2 = fakeMongoDatabase.getCollection(TEST_MIGRATION_COLLECTION)
+                .countDocuments(new Document().append(MigrationEntry.CHANGE_ID, 2));
+        assertEquals(2, change2);
+
+        long change3 = fakeMongoDatabase.getCollection(TEST_MIGRATION_COLLECTION)
+                .countDocuments(new Document().append(MigrationEntry.CHANGE_ID, 3));
+        assertEquals(2, change3);
+
+        long change4 = fakeMongoDatabase.getCollection(TEST_MIGRATION_COLLECTION)
+                .countDocuments(new Document().append(MigrationEntry.CHANGE_ID, 4));
+        assertEquals(2, change4);
+
+        long change5 = fakeMongoDatabase.getCollection(TEST_MIGRATION_COLLECTION)
+                .countDocuments(new Document().append(MigrationEntry.CHANGE_ID, 5));
+        assertEquals(0, change5);
+
+        long change6 = fakeMongoDatabase.getCollection(TEST_MIGRATION_COLLECTION)
+                .countDocuments(new Document().append(MigrationEntry.CHANGE_ID, 6));
+        assertEquals(1, change6);
+
+        long changeAll = fakeMongoDatabase.getCollection(TEST_MIGRATION_COLLECTION)
+                .countDocuments(new Document());
+        assertEquals(9, changeAll);
     }
 
 
     @Test
     public void shouldExecuteProcessWhenLockAcquired() throws Exception
     {
-        // given
         when(dao.acquireProcessLock()).thenReturn(true);
 
-        // when
-        runner.execute();
+        migration.execute();
 
-        // then
         verify(dao, atLeastOnce()).isNewMigrationUnit(any(MigrationEntry.class));
     }
 
@@ -133,41 +127,32 @@ public class MongoMigrationTest
     @Test
     public void shouldNotExecuteProcessWhenLockNotAcquired() throws Exception
     {
-        // given
         when(dao.acquireProcessLock()).thenReturn(false);
 
-        // when
-        runner.execute();
+        migration.execute();
 
-        // then
         verify(dao, never()).isNewMigrationUnit(any(MigrationEntry.class));
     }
 
 
     @Test
-    public void shouldPassOverChangeSets() throws Exception
+    public void shouldPassOverMigrationUnits() throws Exception
     {
-        // given
         when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(false);
 
-        // when
-        runner.execute();
+        migration.execute();
 
-        // then
-        verify(dao, times(0)).save(any(MigrationEntry.class)); // no changesets saved to dbchangelog
+        verify(dao, times(0)).save(any(MigrationEntry.class));
     }
 
 
     @Test
     public void shouldReleaseLockAfterWhenLockAcquired() throws Exception
     {
-        // given
         when(dao.acquireProcessLock()).thenReturn(true);
 
-        // when
-        runner.execute();
+        migration.execute();
 
-        // then
         verify(dao).releaseProcessLock();
     }
 
@@ -176,38 +161,32 @@ public class MongoMigrationTest
     @Test
     public void shouldReleaseLockWhenExceptionInMigration() throws Exception
     {
-
-        // given
         // would be nicer with a mock for the whole execution, but this would mean breaking out to separate class..
         // this should be "good enough"
         when(dao.acquireProcessLock()).thenReturn(true);
         when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenThrow(RuntimeException.class);
 
-        // when
         // have to catch the exception to be able to verify after
         try
         {
-            runner.execute();
+            migration.execute();
         }
         catch (Exception e)
         {
             // do nothing
         }
-        // then
-        verify(dao).releaseProcessLock();
 
+        verify(dao).releaseProcessLock();
     }
 
 
     @Test
     public void shouldReturnExecutionStatusBasedOnDao() throws Exception
     {
-        // given
         when(dao.isProccessLockHeld()).thenReturn(true);
 
-        boolean inProgress = runner.isExecutionInProgress();
+        boolean inProgress = migration.isExecutionInProgress();
 
-        // then
         assertTrue(inProgress);
     }
 
@@ -217,21 +196,7 @@ public class MongoMigrationTest
     {
         MongoMigration runner = new MongoMigration(new MongoClientURI("mongodb://localhost:27017/"));
         runner.setEnabled(true);
-        runner.setMigrationScanPackage(MongobeeTestResource.class.getPackage().getName());
+        runner.setMigrationScanPackage(V_1__migrations.class.getPackage().getName());
         runner.execute();
     }
-
-
-    @Test
-    public void shouldUsePreConfiguredMongoTemplate() throws Exception
-    {
-        MongoTemplate mt = mock(MongoTemplate.class);
-        when(mt.getCollectionNames()).thenReturn(Collections.EMPTY_SET);
-        when(dao.acquireProcessLock()).thenReturn(true);
-        when(dao.isNewMigrationUnit(any(MigrationEntry.class))).thenReturn(true);
-        runner.setMongoTemplate(mt);
-        runner.afterPropertiesSet();
-        verify(mt).getCollectionNames();
-    }
-
 }

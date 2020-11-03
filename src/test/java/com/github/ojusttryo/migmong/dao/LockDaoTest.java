@@ -1,124 +1,101 @@
 package com.github.ojusttryo.migmong.dao;
 
+import static com.github.ojusttryo.migmong.common.Constants.TEST_LOCK_COLLECTION;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.github.fakemongo.Fongo;
+import com.github.ojusttryo.migmong.AbstractMigrationTest;
 import com.mongodb.client.MongoDatabase;
 
 /**
+ * Tests for acquiring and releasing locks
  * @author colsson11
  * @since 13.01.15
  */
-public class LockDaoTest
+public class LockDaoTest extends AbstractMigrationTest
 {
-
-    private static final String TEST_SERVER = "testServer";
-    private static final String DB_NAME = "mongobeetest";
-    private static final String LOCK_COLLECTION_NAME = "mongobeelock";
-
-
     @Test
     public void releaseLockShouldBeIdempotent()
     {
-        // given
-        MongoDatabase db = new Fongo(TEST_SERVER).getDatabase(DB_NAME);
-        LockDao dao = new LockDao(LOCK_COLLECTION_NAME);
-
+        MongoDatabase db = prepareFakeDatabase();
+        LockDao dao = new LockDao(TEST_LOCK_COLLECTION);
         dao.initializeLock(db);
 
-        // when
         dao.releaseLock(db);
         dao.releaseLock(db);
         boolean hasLock = dao.acquireLock(db);
-        // then
-        assertTrue(hasLock);
 
+        assertTrue(hasLock);
     }
 
 
     @Test
-    public void shouldGetLockWhenNotPreviouslyHeld() throws Exception
+    public void shouldGetLockWhenNotPreviouslyHeld()
     {
-
-        // given
-        MongoDatabase db = new Fongo(TEST_SERVER).getDatabase(DB_NAME);
-        LockDao dao = new LockDao(LOCK_COLLECTION_NAME);
+        MongoDatabase db = prepareFakeDatabase();
+        LockDao dao = new LockDao(TEST_LOCK_COLLECTION);
         dao.initializeLock(db);
 
-        // when
         boolean hasLock = dao.acquireLock(db);
 
-        // then
         assertTrue(hasLock);
-
     }
 
 
     @Test
-    public void shouldGetLockWhenPreviouslyHeldAndReleased() throws Exception
+    public void shouldGetLockWhenPreviouslyHeldAndReleased()
     {
-
-        // given
-        MongoDatabase db = new Fongo(TEST_SERVER).getDatabase(DB_NAME);
-        LockDao dao = new LockDao(LOCK_COLLECTION_NAME);
+        MongoDatabase db = prepareFakeDatabase();
+        LockDao dao = new LockDao(TEST_LOCK_COLLECTION);
         dao.initializeLock(db);
 
-        // when
         dao.acquireLock(db);
         dao.releaseLock(db);
         boolean hasLock = dao.acquireLock(db);
-        // then
-        assertTrue(hasLock);
 
+        assertTrue(hasLock);
     }
 
 
     @Test
-    public void shouldNotGetLockWhenPreviouslyHeld() throws Exception
+    public void shouldNotGetLockWhenPreviouslyHeld()
     {
-
-        // given
-        MongoDatabase db = new Fongo(TEST_SERVER).getDatabase(DB_NAME);
-        LockDao dao = new LockDao(LOCK_COLLECTION_NAME);
+        MongoDatabase db = prepareFakeDatabase();
+        LockDao dao = new LockDao(TEST_LOCK_COLLECTION);
         dao.initializeLock(db);
 
-        // when
         dao.acquireLock(db);
         boolean hasLock = dao.acquireLock(db);
-        // then
+
         assertFalse(hasLock);
-
     }
 
 
     @Test
     public void whenLockHeldCheckReturnsTrue()
     {
-
-        MongoDatabase db = new Fongo(TEST_SERVER).getDatabase(DB_NAME);
-        LockDao dao = new LockDao(LOCK_COLLECTION_NAME);
+        MongoDatabase db = prepareFakeDatabase();
+        LockDao dao = new LockDao(TEST_LOCK_COLLECTION);
         dao.initializeLock(db);
 
         dao.acquireLock(db);
 
         assertTrue(dao.isLockHeld(db));
-
     }
 
 
     @Test
     public void whenLockNotHeldCheckReturnsFalse()
     {
-
-        MongoDatabase db = new Fongo(TEST_SERVER).getDatabase(DB_NAME);
-        LockDao dao = new LockDao(LOCK_COLLECTION_NAME);
+        MongoDatabase db = prepareFakeDatabase();
+        LockDao dao = new LockDao(TEST_LOCK_COLLECTION);
         dao.initializeLock(db);
 
         assertFalse(dao.isLockHeld(db));
-
     }
+
+
 
 }

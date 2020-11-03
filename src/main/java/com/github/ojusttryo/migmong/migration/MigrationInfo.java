@@ -1,7 +1,6 @@
 package com.github.ojusttryo.migmong.migration;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.regex.Pattern;
 
 import com.github.ojusttryo.migmong.exception.MigrationException;
 
@@ -23,16 +22,16 @@ public class MigrationInfo
     }
 
 
-    public MigrationInfo(Class<?> migrationClass) throws MigrationException
+    public MigrationInfo(Class<?> migrationClass, String prefix) throws MigrationException
     {
         this.migrationClass = migrationClass;
-        this.version = parseVersion(migrationClass.getSimpleName());
+        this.version = parseVersion(migrationClass.getSimpleName(), prefix);
     }
 
 
-    private Version parseVersion(String className) throws MigrationException
+    private Version parseVersion(String className, String prefix) throws MigrationException
     {
-        String version = className.replaceFirst("V_", "");
+        String version = className.replaceFirst(Pattern.quote(prefix), "");
         version = version.replaceFirst("__\\w+\\Z", "");
 
         return Version.from(version, "_");

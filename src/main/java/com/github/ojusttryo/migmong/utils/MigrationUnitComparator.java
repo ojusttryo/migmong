@@ -7,12 +7,9 @@ import java.util.Comparator;
 import com.github.ojusttryo.migmong.migration.annotations.MigrationUnit;
 
 /**
- * Sort {@link MigrationUnit} by 'order' value
- *
- * @author lstolowski
- * @since 2014-09-17
+ * Sort {@link MigrationUnit} by 'id' value
  */
-public class ChangeSetComparator implements Comparator<Method>, Serializable
+public class MigrationUnitComparator implements Comparator<Method>, Serializable
 {
     @Override
     public int compare(Method left, Method right)

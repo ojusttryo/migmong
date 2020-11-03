@@ -1,27 +1,27 @@
-package com.github.ojusttryo.migmong.utils;
+package com.github.ojusttryo.migmong.migrationWithDuplicates;
 
 import com.github.ojusttryo.migmong.migration.annotations.Migration;
 import com.github.ojusttryo.migmong.migration.annotations.MigrationUnit;
 
 @Migration
-public class ChangeLogWithDuplicate
+public class V_0_1_5__withDuplicates
 {
     @MigrationUnit(id = 1)
-    public void testChangeSet()
+    public void testMigration()
     {
         System.out.println("invoked B1");
     }
 
 
     @MigrationUnit(id = 2)
-    public void testChangeSet2()
+    public void testMigration2()
     {
         System.out.println("invoked B2");
     }
 
 
-    @MigrationUnit(id = 3)
-    public void testChangeSet3()
+    @MigrationUnit(id = 2)
+    public void testMigration3()
     {
         System.out.println("invoked B3");
     }
