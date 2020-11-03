@@ -12,10 +12,9 @@ import com.github.ojusttryo.migmong.exception.MigrationException;
 import com.github.ojusttryo.migmong.exception.MigrationUnitException;
 import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.github.ojusttryo.migmong.migration.MigrationInfo;
-import com.github.ojusttryo.migmong.migration.Version;
+import com.github.ojusttryo.migmong.migrationWithDuplicates.V_0_1_5__withDuplicates;
 import com.github.ojusttryo.migmong.migrations.V_0_9__anotherMigrations;
 import com.github.ojusttryo.migmong.migrations.V_1__migrations;
-import com.github.ojusttryo.migmong.migrationWithDuplicates.V_0_1_5__withDuplicates;
 
 import junit.framework.Assert;
 
@@ -60,7 +59,7 @@ public class MigrationServiceTest
         String scanPackage = V_1__migrations.class.getPackage().getName();
         MigrationService service = new MigrationService(scanPackage);
 
-        List<MigrationInfo> foundMigrations = service.fetchMigrations(new Version(1), "V_");
+        List<MigrationInfo> foundMigrations = service.fetchMigrations("V_");
 
         assertTrue(foundMigrations != null && foundMigrations.size() > 0);
     }

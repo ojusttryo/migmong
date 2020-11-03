@@ -67,7 +67,6 @@ public class MongoMigrationTest extends AbstractMigrationTest
 
         migration.setDbName(TEST_DB_NAME);
         migration.setEnabled(true);
-        migration.setApplicationVersion("1.0.0", ".");
         migration.setMigrationNamePrefix("V_");
         migration.setMigrationScanPackage(V_1__migrations.class.getPackage().getName());
     }

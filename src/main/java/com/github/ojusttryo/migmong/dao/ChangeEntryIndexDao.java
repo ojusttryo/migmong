@@ -4,7 +4,6 @@ import org.bson.Document;
 
 import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 
 /**
@@ -32,19 +31,6 @@ public class ChangeEntryIndexDao
     public void dropIndex(MongoCollection<Document> collection, Document index)
     {
         collection.dropIndex(index.get("name").toString());
-    }
-
-
-    public Document findRequiredIndex(MongoDatabase db)
-    {
-        MongoCollection<Document> indexes = db.getCollection("system.indexes");
-        Document index = indexes
-                .find(new Document()
-                    .append("ns", db.getName() + "." + migrationCollection)
-                    .append("key", new Document().append(MigrationEntry.CHANGE_ID, 1)))
-                .first();
-
-        return index;
     }
 
 

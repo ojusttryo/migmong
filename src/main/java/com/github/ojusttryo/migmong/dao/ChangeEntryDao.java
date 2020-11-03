@@ -106,8 +106,7 @@ public class ChangeEntryDao
 
         this.mongoClient = mongo;
         mongoDatabase = mongo.getDatabase(dbName);
-
-        ensureMigrationCollectionIndex(mongoDatabase.getCollection(migrationCollectionName));
+        indexDao.createRequiredUniqueIndex(mongoDatabase.getCollection(migrationCollectionName));
         initializeLock();
         return mongoDatabase;
     }
@@ -235,24 +234,6 @@ public class ChangeEntryDao
     void setLockDao(LockDao lockDao)
     {
         this.lockDao = lockDao;
-    }
-
-
-    private void ensureMigrationCollectionIndex(MongoCollection<Document> collection)
-    {
-        Document index = indexDao.findRequiredIndex(mongoDatabase);
-        if (index == null)
-        {
-            indexDao.createRequiredUniqueIndex(collection);
-            logger.debug("Index in collection " + migrationCollectionName + " was created");
-        }
-        else if (!indexDao.isUnique(index))
-        {
-            indexDao.dropIndex(collection, index);
-            indexDao.createRequiredUniqueIndex(collection);
-            logger.debug("Index in collection " + migrationCollectionName + " was recreated");
-        }
-
     }
 
 

@@ -16,7 +16,6 @@ import com.github.ojusttryo.migmong.exception.MigrationException;
 import com.github.ojusttryo.migmong.exception.MigrationUnitException;
 import com.github.ojusttryo.migmong.migration.MigrationEntry;
 import com.github.ojusttryo.migmong.migration.MigrationInfo;
-import com.github.ojusttryo.migmong.migration.Version;
 import com.github.ojusttryo.migmong.migration.annotations.Migration;
 import com.github.ojusttryo.migmong.migration.annotations.MigrationUnit;
 
@@ -28,10 +27,7 @@ import com.github.ojusttryo.migmong.migration.annotations.MigrationUnit;
  */
 public class MigrationService
 {
-    private static final String DEFAULT_PROFILE = "default";
-
     private final String migrationsBasePackage;
-
 
 
     public MigrationService(String migrationsBasePackage)
@@ -57,7 +53,7 @@ public class MigrationService
     }
 
 
-    public List<MigrationInfo> fetchMigrations(Version applicationVersion, String prefix) throws MigrationException
+    public List<MigrationInfo> fetchMigrations(String prefix) throws MigrationException
     {
         Reflections reflections = new Reflections(migrationsBasePackage);
         List<MigrationInfo> migrations = new ArrayList<>();
@@ -73,9 +69,7 @@ public class MigrationService
                 continue;
 
             MigrationInfo migrationInfo = new MigrationInfo(migrationClass, prefix);
-            // Add only versions lower or equal to current application version
-            if (migrationInfo.getVersion().compareTo(applicationVersion) <= 0)
-                migrations.add(migrationInfo);
+            migrations.add(migrationInfo);
         }
         migrations.sort(new MigrationComparator());
         return migrations;

@@ -15,15 +15,14 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
+import com.github.ojusttryo.migmong.dao.ChangeEntryDao;
 import com.github.ojusttryo.migmong.exception.MigrationConfigurationException;
 import com.github.ojusttryo.migmong.exception.MigrationConnectionException;
 import com.github.ojusttryo.migmong.exception.MigrationException;
 import com.github.ojusttryo.migmong.exception.MigrationLockException;
-import com.github.ojusttryo.migmong.migration.MigrationInfo;
 import com.github.ojusttryo.migmong.migration.MigrationContext;
-import com.github.ojusttryo.migmong.dao.ChangeEntryDao;
 import com.github.ojusttryo.migmong.migration.MigrationEntry;
-import com.github.ojusttryo.migmong.migration.Version;
+import com.github.ojusttryo.migmong.migration.MigrationInfo;
 import com.github.ojusttryo.migmong.migration.annotations.Migration;
 import com.github.ojusttryo.migmong.utils.MigrationService;
 import com.mongodb.MongoClient;
@@ -42,8 +41,8 @@ public class MongoMigration implements InitializingBean
 {
     private static final Logger logger = LoggerFactory.getLogger(MongoMigration.class);
 
-    private static final String DEFAULT_MIGRATION_COLLECTION_NAME = "migration_log";
-    private static final String DEFAULT_LOCK_COLLECTION_NAME = "migration_lock";
+    private static final String DEFAULT_MIGRATION_COLLECTION_NAME = "migrationLog";
+    private static final String DEFAULT_LOCK_COLLECTION_NAME = "migrationLock";
     private static final boolean DEFAULT_WAIT_FOR_LOCK = false;
     private static final long DEFAULT_MIGRATION_LOCK_WAIT_TIME = 5L;
     private static final long DEFAULT_MIGRATION_LOCK_POLL_RATE = 10L;
@@ -58,7 +57,6 @@ public class MongoMigration implements InitializingBean
 
     private MongoClient mongoClient;
     private MigrationContext migrationContext = new MigrationContext();
-    private Version applicationVersion = new Version();
     private String migrationPrefix = "V";
 
 
@@ -212,17 +210,6 @@ public class MongoMigration implements InitializingBean
 
 
     /**
-     * Sets application version to limit migrations. Migrations higher than this version are ignored.
-     * Required
-     * @param version version of application
-     */
-    public void setApplicationVersion(Version version)
-    {
-        this.applicationVersion = version;
-    }
-
-
-    /**
      * Sets prefix for migration names. Default is 'V'.
      * <p>Examples:</p>
      * <ul>
@@ -237,16 +224,6 @@ public class MongoMigration implements InitializingBean
         this.migrationPrefix = prefix;
     }
 
-
-    /**
-     * Sets application version to limit migration. Migrations higher than this version are ignored.
-     * @param version version. Might contains from 1 to 3 numbers (major, minor, build)
-     * @param delimiter delimiter for numbers in version
-     */
-    public void setApplicationVersion(String version, String delimiter)
-    {
-        this.applicationVersion = Version.from(version, delimiter);
-    }
 
 
     /**
@@ -417,7 +394,7 @@ public class MongoMigration implements InitializingBean
     {
         MigrationService service = new MigrationService(migrationScanPackage);
 
-        for (MigrationInfo migrationInfo : service.fetchMigrations(applicationVersion, migrationPrefix))
+        for (MigrationInfo migrationInfo : service.fetchMigrations(migrationPrefix))
         {
             try
             {

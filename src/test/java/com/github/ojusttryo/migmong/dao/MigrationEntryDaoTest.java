@@ -109,7 +109,6 @@ public class MigrationEntryDaoTest extends AbstractMigrationTest
         ChangeEntryDao dao = new ChangeEntryDao(TEST_MIGRATION_COLLECTION, TEST_LOCK_COLLECTION, WAIT_FOR_LOCK,
                 CHANGE_LOG_LOCK_WAIT_TIME, CHANGE_LOG_LOCK_POLL_RATE, THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK);
         ChangeEntryIndexDao indexDaoMock = mock(ChangeEntryIndexDao.class);
-        when(indexDaoMock.findRequiredIndex(db)).thenReturn(new Document());
         when(indexDaoMock.isUnique(any(Document.class))).thenReturn(true);
         dao.setIndexDao(indexDaoMock);
 
