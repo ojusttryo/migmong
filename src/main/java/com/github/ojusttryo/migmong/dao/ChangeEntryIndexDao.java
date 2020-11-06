@@ -24,7 +24,10 @@ public class ChangeEntryIndexDao
 
     public void createRequiredUniqueIndex(MongoCollection<Document> collection)
     {
-        collection.createIndex(new Document().append(MigrationEntry.CHANGE_ID, 1), new IndexOptions().unique(true));
+        collection.createIndex(new Document()
+                        .append(MigrationEntry.CHANGE_ID, 1)
+                        .append(MigrationEntry.MIGRATION_CLASS, 1),
+                new IndexOptions().unique(true));
     }
 
 
