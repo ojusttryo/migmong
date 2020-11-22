@@ -1,66 +1,68 @@
-![mongobee](https://raw.githubusercontent.com/mongobee/mongobee/master/misc/mongobee_min.png)
 
+## Introduction
 
-**migmong** is a Java tool which helps you to *manage changes* in your MongoDB and *synchronize* them with your application.
-The concept is very similar to other db migrationInfo tools such as [Liquibase](http://www.liquibase.org) or [Flyway](http://flywaydb.org) but *without using XML/JSON/YML files*.
+**migmong** is a Java tool which helps you to *manage changes* in your MongoDB.
+The concept is very similar to other db migration tools such as [Flyway](http://flywaydb.org) but *without using XML/JSON/YML files*.
 
 The goal is to keep this tool simple and comfortable to use.
 
 
-**migmong** provides new approach for adding changes (change sets) based on Java classes and methods with appropriate annotations.
+**migmong** provides an approach for adding changes based on Java classes and methods with appropriate annotations.
 
 ## Getting started
 
-### Add a dependency
+### Add a dependency (not working yet)
 
 With Maven
 ```xml
 <dependency>
-  <groupId>com.github.migmong</groupId>
-  <artifactId>migmong</artifactId>
-  <version>0.13</version>
+    <groupId>com.github.migmong</groupId>
+    <artifactId>migmong</artifactId>
+    <version>1.0</version>
 </dependency>
 ```
 
 
 ### Usage with Spring
 
-You need to instantiate MigMong object and provide some configuration.
+You need to instantiate `MongoMigration` object and provide some configuration.
 If you use Spring can be instantiated as a singleton bean in the Spring context. 
-In this case the migrationInfo process will be executed automatically on startup.
+In this case the migration process will be executed automatically on startup.
 
 ```java
 @Bean
-public Mongobee mongobee(){
-  Mongobee runner = new Mongobee("mongodb://YOUR_DB_HOST:27017/DB_NAME");
-  runner.setDbName("yourDbName");         // host must be set if not set in URI
-  runner.setChangeLogsScanPackage(
-       "com.example.yourapp.changelogs"); // the package to be scanned for changesets
-  
-  return runner;
+public MongoMigration mongoMigration()
+{
+    MongoMigration migration = new MongoMigration(host, port, name, user, password);
+    migration.setMigrationScanPackage("com.foo.database.migrations");
+    return migration;
 }
 ```
 
 
 ### Usage without Spring
-Using mongobee without a spring context has similar configuration but you have to remember to run `execute()` method to start a migrationInfo process.
+Using **migmong** without a spring context has similar configuration but you have to remember to run `execute()` method to start a migrationInfo process.
 
 ```java
-Mongobee runner = new Mongobee("mongodb://YOUR_DB_HOST:27017/DB_NAME");
-runner.setDbName("yourDbName");         // host must be set if not set in URI
-runner.setChangeLogsScanPackage(
-     "com.example.yourapp.changelogs"); // package to scan for changesets
-
-runner.execute();         //  ------> starts migrationInfo changesets
+MongoMigration migration = new MongoMigration(host, port, name, user, password);
+migration.setMigrationScanPackage("com.foo.database.migrations");
+migration.execute();
 ```
 
-Above examples provide minimal configuration. `Mongobee` object provides some other possibilities (setters) to make the tool more flexible:
+Above examples provide minimal configuration. `MongoMigration` object provides some other possibilities (setters) to make the tool more flexible:
 
 ```java
-runner.setChangelogCollectionName(logColName);   // default is dbchangelog, collection with applied change sets
-runner.setLockCollectionName(lockColName);       // default is mongobeelock, collection used during migrationInfo process
-runner.setEnabled(shouldBeEnabled);              // default is true, migrationInfo won't start if set to false
+migration.setMigrationCollectionName("migrationLog");   // collection with applied change sets
+migration.setMigrationNamePrefix("V_");                 // prefix of names of all migrations, default is 'V'
+migration.setApplicationContext(context);               // instance of Spring application context to get your beans
+migration.setMongoTemplate(mongoTemplate);              // instance of Spring MongoTemplate
+migration.setSpringEnvironment(environment);            // instance of Spring Environment
+migration.setCustomVariable(name, variable);            // any variable you want to have during the migration process
+migration.setEnabled(true);                             // default is true, migrationInfo won't start if set to false
 ```
+
+You can specify connection options in several ways: `MongoClientURI`, `MongoClient`, mongo URI string, or options like in the above examples (host, port, dbName, user, password)
+
 
 MongoDB URI format:
 ```
@@ -69,165 +71,103 @@ mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][
 [More about URI](http://mongodb.github.io/mongo-java-driver/3.5/javadoc/)
 
 
-### Creating change logs
+### Creating migrations
 
-`ChangeLog` contains bunch of `ChangeSet`s. `ChangeSet` is a single task (set of instructions made on a database). In other words `ChangeLog` is a class annotated with `@ChangeLog` and containing methods annotated with `@ChangeSet`.
+`Migration` contains bunch of `MigrationUnit`. `MigrationUnit` is a single task (set of instructions made on a database). In other words `Migration` is a class annotated with `@Migration` and containing methods annotated with `@MigrationUnit`.
 
 ```java 
-package com.example.yourapp.changelogs;
+package com.foo.database.migrations;
 
-@ChangeLog
-public class DatabaseChangelog {
-  
-  @ChangeSet(order = "001", id = "someChangeId", author = "testAuthor")
-  public void importantWorkToDo(DB db){
-     // task implementation
-  }
+@Migration
+public class V0_1_0__migrateMyStuff
+{
+    @MigrationUnit(id = 1)
+    public void makeMyBigChanges(MigrationContext context)
+    {
+        // get your information that was put into the migration context
+        MyBean myBean = context.getApplicationContext().getBean(MyBean.class);
+        ...
+        // do some stuff
+        ... 
+    }
 
-
+    @MigrationUnit(id = 2)
+    public void makeEvenBiggerChanges(MigrationContext context)
+    {
+        
+    }
 }
 ```
-#### @ChangeLog
 
-Class with change sets must be annotated by `@ChangeLog`. There can be more than one change log class but in that case `order` argument should be provided:
+#### @Migration
+
+Class with migration units must be annotated by `@Migration`. Migrations are sorted by the version, that you specify at the beginning of each class name after prefix.
+```java
+@Migration
+public class V0_1_0__migrateMyStuff
+{
+    
+}
+```
+In this case:  
+`V` is prefix  
+`0_1_0` is version  
+`__` - separator between version and migration name  
+`migrateMyStuff` - migration name
+
+#### Migration version
+
+You can specify either version you like using numbers and separator `_`. For example: `1`, `2_3_57`, etc.
+
+#### @MigrationUnit
+
+Method annotated by `@MigrationUnit` is taken and applied to the database. History of applied migration units is stored in a migration log collection (by default 'migrationLog') in your MongoDB
 
 ```java
-@ChangeLog(order = "001")
-public class DatabaseChangelog {
-  //...
+@MigrationUnit(id = 5)
+public void foo(MigrationContext context)
+{
+    
 }
 ```
-ChangeLogs are sorted alphabetically by `order` argument and changesets are applied due to this order.
+Each method must take the `MigrationContext` parameter, which contains all the data that you passed there during initialization.
 
-#### @ChangeSet
-
-Method annotated by @ChangeSet is taken and applied to the database. History of applied change sets is stored in a collection called `dbchangelog` (by default) in your MongoDB
-
-##### Annotation parameters:
-
-`order` - string for sorting change sets in one changelog. Sorting in alphabetical order, ascending. It can be a number, a date etc.
-
-`id` - name of a change set, **must be unique** for all change logs in a database
-
-`author` - author of a change set
-
-`runAlways` - _[optional, default: false]_ changeset will always be executed but only first execution event will be stored in dbchangelog collection
-
-##### Defining ChangeSet methods
-Method annotated by `@ChangeSet` can have one of the following definition:
-
-```java
-@ChangeSet(order = "001", id = "someChangeWithoutArgs", author = "testAuthor")
-public void someChange1() {
-   // method without arguments can do some non-db changes
-}
-
-@ChangeSet(order = "002", id = "someChangeWithMongoDatabase", author = "testAuthor")
-public void someChange2(MongoDatabase db) {
-  // type: com.mongodb.client.MongoDatabase : original MongoDB driver v. 3.x, operations allowed by driver are possible
-  // example: 
-  MongoCollection<Document> mycollection = db.getCollection("mycollection");
-  Document doc = new Document("testName", "example").append("test", "1");
-  mycollection.insertOne(doc);
-}
-
-@ChangeSet(order = "003", id = "someChangeWithDb", author = "testAuthor")
-public void someChange3(DB db) {
-  // This is deprecated in mongo-java-driver 3.x, use MongoDatabase instead
-  // type: com.mongodb.DB : original MongoDB driver v. 2.x, operations allowed by driver are possible
-  // example: 
-  DBCollection mycollection = db.getCollection("mycollection");
-  BasicDBObject doc = new BasicDBObject().append("test", "1");
-  mycollection .insert(doc);
-}
-
-
-@ChangeSet(order = "004", id = "someChangeWithSpringDataTemplate", author = "testAuthor")
-public void someChange5(MongoTemplate mongoTemplate) {
-  // type: org.springframework.data.mongodb.core.MongoTemplate
-  MigrationUnit
-  // example:
-  mongoTemplate.save(myEntity);
-}
-
-@ChangeSet(order = "005", id = "someChangeWithSpringDataTemplate", author = "testAuthor")
-public void someChange5(MongoTemplate mongoTemplate, Environment environment) {
-  // type: org.springframework.data.mongodb.core.MongoTemplate
-  // type: org.springframework.core.env.Environment
-  MigrationUnit
-}
-```
-
-### Using Spring profiles
-     
-**mongobee** accepts Spring's `org.springframework.context.annotation.Profile` annotation. If a change log or change set class is annotated  with `@Profile`, 
-then it is activated for current application profiles.
-
-_Example 1_: annotated change set will be invoked for a `dev` profile
-```java
-@Profile("dev")
-@ChangeSet(author = "testuser", id = "myDevChangest", order = "01")
-public void devEnvOnly(DB db){
-  // ...
-}
-```
-_Example 2_: all change sets in a changelog will be invoked for a `test` profile
-```java
-@ChangeLog(order = "1")
-@Profile("test")
-public class ChangelogForTestEnv{
-  @ChangeSet(author = "testuser", id = "myTestChangest", order = "01")
-  public void testingEnvOnly(DB db){
-    // ...
-  } 
-}
-```
-
-#### Enabling @Profile annotation (option)
-      
-To enable the `@Profile` integration, please inject `org.springframework.core.env.Environment` to you runner.
-
-```java      
-@Bean @Autowired
-public Mongobee mongobee(Environment environment) {
-  Mongobee runner = new Mongobee(uri);
-  runner.setSpringEnvironment(environment)
-  //... etc
-}
-```
+`id` - a number of the migration unit. This attribute is required and should be unique. It is used to sort your methods.
 
 ## Known issues
 
 ##### Mongo java driver conflicts
 
-**mongobee** depends on `mongo-java-driver`. If your application has mongo-java-driver dependency too, there could be a library conflicts in some cases.
-
-**Exception**:
-```
-com.mongodb.WriteConcernException: { "serverUsed" : "localhost" , 
-"err" : "invalid ns to index" , "code" : 10096 , "n" : 0 , 
-"connectionId" : 955 , "ok" : 1.0}
-```
+**migmong** depends on `mongo-java-driver`. If your application has mongo-java-driver dependency too, there could be a library conflicts in some cases.
 
 **Workaround**:
 
-You can exclude mongo-java-driver from **mongobee**  and use your dependency only. Maven example (pom.xml) below:
+You can exclude mongo-java-driver from **migmong** and use your dependency only. 
+
+## Current state of library
+
+For now the library **is not put to any repository**. Also **it is not well tested**. It should be used carefully.
+
+So you can download source code and compile the library. Also you can specify your own library versions in the pom.xml.
+
+To use it within your project you can include it as .jar file and add in pom.xml this way:
+
 ```xml
 <dependency>
-    <groupId>org.mongodb</groupId>
-    <artifactId>mongo-java-driver</artifactId>
-    <version>3.0.0</version>
-</dependency>
-
-<dependency>
-  <groupId>com.github.mongobee</groupId>
-  <artifactId>mongobee</artifactId>
-  <version>0.9</version>
-  <exclusions>
-    <exclusion>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongo-java-driver</artifactId>
-    </exclusion>
-  </exclusions>
+    <groupId>com.github.migmong</groupId>
+    <artifactId>migmong</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>${project.basedir}/src/main/resources/migmong.jar</systemPath>
+    <exclusions>
+        <exclusion>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+        </exclusion>
+    </exclusions>
 </dependency>
 ```

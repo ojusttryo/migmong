@@ -10,7 +10,7 @@
 
 	<groupId>com.github.migmong</groupId>
 	<artifactId>migmong</artifactId>
-	<version>0.15-SNAPSHOT</version>
+	<version>1.0</version>
 
 	<licenses>
 		<license>
@@ -78,7 +78,6 @@
 			<version>1.7.7</version>
 		</dependency>
 
-		<!-- TEST -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -91,7 +90,6 @@
 			<version>1.9.0</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/de.bwaldvogel/mongo-java-server -->
 		<dependency>
 			<groupId>de.bwaldvogel</groupId>
 			<artifactId>mongo-java-server</artifactId>
