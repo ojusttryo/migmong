@@ -4,6 +4,8 @@ import java.util.Date;
 
 import org.bson.Document;
 
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Entry in the changes collection log
@@ -12,6 +14,8 @@ import org.bson.Document;
  * @author lstolowski
  * @since 27/07/2014
  */
+@Data
+@RequiredArgsConstructor
 public class MigrationEntry
 {
     public static final String CHANGE_ID = "changeId";
@@ -19,19 +23,10 @@ public class MigrationEntry
     public static final String MIGRATION_CLASS = "migrationClass";
     public static final String MIGRATION_UNIT = "migrationUnit";
 
-    private int changeId;
-    private Date timestamp;
-    private String migrationClass;
-    private String migrationUnit;
-
-
-    public MigrationEntry(int changeId, Date timestamp, String migrationClass, String migrationUnit)
-    {
-        this.changeId = changeId;
-        this.timestamp = new Date(timestamp.getTime());
-        this.migrationClass = migrationClass;
-        this.migrationUnit = migrationUnit;
-    }
+    private final int changeId;
+    private final Date timestamp;
+    private final String migrationClass;
+    private final String migrationUnit;
 
 
     public Document buildFullDBObject()
@@ -52,30 +47,6 @@ public class MigrationEntry
         return new Document()
                 .append(CHANGE_ID, this.changeId)
                 .append(MIGRATION_CLASS, this.migrationClass);
-    }
-
-
-    public int getChangeId()
-    {
-        return this.changeId;
-    }
-
-
-    public String getMigrationClass()
-    {
-        return this.migrationClass;
-    }
-
-
-    public String getMigrationUnit()
-    {
-        return this.migrationUnit;
-    }
-
-
-    public Date getTimestamp()
-    {
-        return this.timestamp;
     }
 
 

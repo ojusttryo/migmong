@@ -19,21 +19,18 @@ import com.github.migmong.migration.annotations.MigrationUnit;
 import com.github.migmong.exception.MigrationException;
 import com.github.migmong.migration.MigrationEntry;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * Utilities to deal with reflections and annotations
  *
  * @author lstolowski
  * @since 27/07/2014
  */
+@RequiredArgsConstructor
 public class MigrationService
 {
     private final String migrationsBasePackage;
-
-
-    public MigrationService(String migrationsBasePackage)
-    {
-        this.migrationsBasePackage = migrationsBasePackage;
-    }
 
 
     public MigrationEntry createMigrationEntry(Method migrationUnit)

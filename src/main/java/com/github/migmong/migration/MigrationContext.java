@@ -9,9 +9,12 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.mongodb.client.MongoDatabase;
 
+import lombok.Data;
+
 /**
  * MigrationInfo context to be passed to every migration unit
  */
+@Data
 public class MigrationContext
 {
     private Environment springEnvironment;
@@ -21,59 +24,10 @@ public class MigrationContext
     private Map<String, Object> customVariables = new HashMap<>();
 
 
-    public Environment getSpringEnvironment()
-    {
-        return springEnvironment;
-    }
-
-
-    public void setSpringEnvironment(Environment springEnvironment)
-    {
-        this.springEnvironment = springEnvironment;
-    }
-
-
-    public ApplicationContext getApplicationContext()
-    {
-        return applicationContext;
-    }
-
-
-    public void setApplicationContext(ApplicationContext applicationContext)
-    {
-        this.applicationContext = applicationContext;
-    }
-
-
-    public MongoTemplate getMongoTemplate()
-    {
-        return mongoTemplate;
-    }
-
-
-    public void setMongoTemplate(MongoTemplate mongoTemplate)
-    {
-        this.mongoTemplate = mongoTemplate;
-    }
-
-
-    public MongoDatabase getMongoDatabase()
-    {
-        return mongoDatabase;
-    }
-
-
-    public void setMongoDatabase(MongoDatabase mongoDatabase)
-    {
-        this.mongoDatabase = mongoDatabase;
-    }
-
-
     public void setVariable(String name, Object variable)
     {
         customVariables.put(name, variable);
     }
-
 
     public Object getVariable(String name)
     {

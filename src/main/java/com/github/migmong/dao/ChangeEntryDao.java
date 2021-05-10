@@ -5,26 +5,25 @@ import static org.springframework.util.StringUtils.hasText;
 import java.util.Date;
 
 import org.bson.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.github.migmong.exception.MigrationLockException;
 import com.github.migmong.exception.MigrationConfigurationException;
 import com.github.migmong.exception.MigrationConnectionException;
+import com.github.migmong.exception.MigrationLockException;
 import com.github.migmong.migration.MigrationEntry;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author lstolowski
  * @since 27/07/2014
  */
+@Slf4j
 public class ChangeEntryDao
 {
-    private static final Logger logger = LoggerFactory.getLogger(ChangeEntryDao.class);
-
     private MongoDatabase mongoDatabase;
     private MongoClient mongoClient;
     private ChangeEntryIndexDao indexDao;
@@ -70,7 +69,7 @@ public class ChangeEntryDao
                 acquired = lockDao.acquireLock(getMongoDatabase());
                 if (!acquired)
                 {
-                    logger.info("Waiting for migration lock....");
+                    log.info("Waiting for migration lock....");
                     try
                     {
                         Thread.sleep(migrationLockPollRate * 1000);
@@ -85,7 +84,7 @@ public class ChangeEntryDao
 
         if (!acquired && throwExceptionIfCannotObtainLock)
         {
-            logger.info("MongoMigration did not acquire process lock. Throwing exception.");
+            log.info("MongoMigration did not acquire process lock. Throwing exception.");
             throw new MigrationLockException("Could not acquire process lock");
         }
 

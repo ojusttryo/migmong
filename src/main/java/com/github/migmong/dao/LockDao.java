@@ -1,32 +1,28 @@
 package com.github.migmong.dao;
 
 import org.bson.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.mongodb.ErrorCategory;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author colsson11
  * @since 13.01.15
  */
+@Slf4j
+@AllArgsConstructor
 public class LockDao
 {
-    private static final Logger logger = LoggerFactory.getLogger(LockDao.class);
     private static final String KEY_PROP_NAME = "key";
     private static final int INDEX_SORT_ASC = 1;
     private static final String LOCK_ENTRY_KEY_VAL = "LOCK";
 
     private String lockCollectionName;
-
-
-    public LockDao(String lockCollectionName)
-    {
-        this.lockCollectionName = lockCollectionName;
-    }
 
 
     public boolean acquireLock(MongoDatabase db)
@@ -43,7 +39,7 @@ public class LockDao
         {
             if (ex.getError().getCategory() == ErrorCategory.DUPLICATE_KEY)
             {
-                logger.warn("Duplicate key exception while acquireLock. Probably the lock has been already acquired.");
+                log.warn("Duplicate key exception while acquireLock. Probably the lock has been already acquired.");
             }
             return false;
         }

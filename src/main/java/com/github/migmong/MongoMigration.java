@@ -8,21 +8,19 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.github.migmong.dao.ChangeEntryDao;
-import com.github.migmong.exception.MigrationLockException;
-import com.github.migmong.migration.MigrationInfo;
 import com.github.migmong.exception.MigrationConfigurationException;
 import com.github.migmong.exception.MigrationConnectionException;
 import com.github.migmong.exception.MigrationException;
+import com.github.migmong.exception.MigrationLockException;
 import com.github.migmong.migration.MigrationContext;
 import com.github.migmong.migration.MigrationEntry;
+import com.github.migmong.migration.MigrationInfo;
 import com.github.migmong.migration.annotations.Migration;
 import com.github.migmong.utils.MigrationService;
 import com.mongodb.MongoClient;
@@ -34,13 +32,14 @@ import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoDatabase;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Mongo migration entry point
  */
+@Slf4j
 public class MongoMigration implements InitializingBean
 {
-    private static final Logger logger = LoggerFactory.getLogger(MongoMigration.class);
-
     private static final String DEFAULT_MIGRATION_COLLECTION_NAME = "migrationLog";
     private static final String DEFAULT_LOCK_COLLECTION_NAME = "migrationLock";
     private static final boolean DEFAULT_WAIT_FOR_LOCK = false;
@@ -176,7 +175,7 @@ public class MongoMigration implements InitializingBean
     {
         if (!isEnabled())
         {
-            logger.info("MongoMigration is disabled. Exiting.");
+            log.info("MongoMigration is disabled. Exiting.");
             return;
         }
 
@@ -189,11 +188,11 @@ public class MongoMigration implements InitializingBean
 
         if (!dao.acquireProcessLock())
         {
-            logger.warn("MongoMigration did not acquire process lock. Exiting.");
+            log.warn("MongoMigration did not acquire process lock. Exiting.");
             return;
         }
 
-        logger.info("MongoMigration acquired process lock, starting the data migration sequence..");
+        log.info("MongoMigration acquired process lock, starting the data migration sequence..");
 
         try
         {
@@ -201,11 +200,11 @@ public class MongoMigration implements InitializingBean
         }
         finally
         {
-            logger.info("MongoMigration is releasing process lock.");
+            log.info("MongoMigration is releasing process lock.");
             dao.releaseProcessLock();
         }
 
-        logger.info("MongoMigration has finished his job.");
+        log.info("MongoMigration has finished his job.");
     }
 
 
@@ -411,21 +410,21 @@ public class MongoMigration implements InitializingBean
                         {
                             executeMigrationUnit(migrationUnit, migrationInstance, dao.getMongoDatabase());
                             dao.save(migrationEntry);
-                            logger.info(migrationEntry + " applied");
+                            log.info(migrationEntry + " applied");
                         }
                         else if (service.isAlwaysRunnableMigration(migrationUnit))
                         {
                             executeMigrationUnit(migrationUnit, migrationInstance, dao.getMongoDatabase());
-                            logger.info(migrationEntry + " applied");
+                            log.info(migrationEntry + " applied");
                         }
                         else
                         {
-                            logger.debug(migrationEntry + " passed over");
+                            log.debug(migrationEntry + " passed over");
                         }
                     }
                     catch (Exception e)
                     {
-                        logger.error(e.getMessage());
+                        log.error(e.getMessage());
                     }
                 }
             }

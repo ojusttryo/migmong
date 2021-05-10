@@ -4,22 +4,13 @@ import java.util.regex.Pattern;
 
 import com.github.migmong.exception.MigrationException;
 
+import lombok.Data;
+
+@Data
 public class MigrationInfo
 {
     private Class<?> migrationClass;
     private Version version;
-
-
-    public Class<?> getMigrationClass()
-    {
-        return migrationClass;
-    }
-
-
-    public Version getVersion()
-    {
-        return version;
-    }
 
 
     public MigrationInfo(Class<?> migrationClass, String prefix) throws MigrationException
