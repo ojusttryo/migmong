@@ -26,7 +26,7 @@ import com.mongodb.client.MongoDatabase;
  */
 public class MigrationEntryIndexDaoTest extends AbstractMigrationTest
 {
-    private static final String CHANGE_ID_INDEX_NAME = "changeId_1";
+    private static final String CHANGE_ID_AND_CLASS_INDEX_NAME = "changeId_1_migrationClass_1";
 
     private ChangeEntryIndexDao dao = new ChangeEntryIndexDao(Constants.TEST_MIGRATION_COLLECTION);
 
@@ -40,7 +40,7 @@ public class MigrationEntryIndexDaoTest extends AbstractMigrationTest
 
         dao.createRequiredUniqueIndex(db.getCollection(Constants.TEST_MIGRATION_COLLECTION));
 
-        Document createdIndex = findIndex(db, CHANGE_ID_INDEX_NAME);
+        Document createdIndex = findIndex(db, CHANGE_ID_AND_CLASS_INDEX_NAME);
         assertNotNull(createdIndex);
         assertTrue(dao.isUnique(createdIndex));
     }
@@ -57,15 +57,15 @@ public class MigrationEntryIndexDaoTest extends AbstractMigrationTest
         MongoCollection<Document> collection = db.getCollection(Constants.TEST_MIGRATION_COLLECTION);
         collection.createIndex(new Document()
                 .append(MigrationEntry.CHANGE_ID, 1));
-        Document index = new Document("name", CHANGE_ID_INDEX_NAME);
+        Document index = new Document("name", CHANGE_ID_AND_CLASS_INDEX_NAME);
 
-        Document createdIndex = findIndex(db, CHANGE_ID_INDEX_NAME);
+        Document createdIndex = findIndex(db, CHANGE_ID_AND_CLASS_INDEX_NAME);
         assertNotNull(createdIndex);
         assertFalse(dao.isUnique(createdIndex));
 
         dao.dropIndex(db.getCollection(Constants.TEST_MIGRATION_COLLECTION), index);
 
-        assertNull(findIndex(db, CHANGE_ID_INDEX_NAME));
+        assertNull(findIndex(db, CHANGE_ID_AND_CLASS_INDEX_NAME));
     }
 
 
