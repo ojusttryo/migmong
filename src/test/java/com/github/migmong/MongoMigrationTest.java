@@ -2,8 +2,9 @@ package com.github.migmong;
 
 import static com.github.migmong.common.Constants.TEST_DB_NAME;
 import static com.github.migmong.common.Constants.TEST_MIGRATION_COLLECTION;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
@@ -14,24 +15,23 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.bson.Document;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.github.migmong.migrations.V_1__migrations;
 import com.github.migmong.dao.ChangeEntryDao;
 import com.github.migmong.dao.ChangeEntryIndexDao;
 import com.github.migmong.exception.MigrationConfigurationException;
-import com.github.migmong.exception.MigrationException;
+import com.github.migmong.exception.MigrationConnectionException;
 import com.github.migmong.migration.MigrationEntry;
+import com.github.migmong.migrations.V_1__migrations;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoDatabase;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class MongoMigrationTest extends AbstractMigrationTest
 {
     @InjectMocks
@@ -46,22 +46,19 @@ public class MongoMigrationTest extends AbstractMigrationTest
     private MongoDatabase fakeMongoDatabase;
 
 
-    @After
-    public void cleanUp()
-    {
-        migration.setMongoTemplate(null);
-    }
-
-
-    @Before
-    public void init() throws MigrationException
+    @BeforeEach
+    public void prepare() throws MigrationConfigurationException, MigrationConnectionException
     {
         fakeMongoDatabase = prepareFakeDatabase();
+        fakeMongoDatabase.getCollection(TEST_MIGRATION_COLLECTION).drop();
+
         when(dao.connectMongoDb(any(MongoClientURI.class), anyString())).thenReturn(fakeMongoDatabase);
         when(dao.getMongoDatabase()).thenReturn(fakeMongoDatabase);
+
         doCallRealMethod().when(dao).save(any(MigrationEntry.class));
         doCallRealMethod().when(dao).setMigrationCollectionName(anyString());
         doCallRealMethod().when(dao).setIndexDao(any(ChangeEntryIndexDao.class));
+
         dao.setIndexDao(indexDao);
         dao.setMigrationCollectionName(TEST_MIGRATION_COLLECTION);
 
@@ -156,7 +153,6 @@ public class MongoMigrationTest extends AbstractMigrationTest
     }
 
 
-    @SuppressWarnings("unchecked")
     @Test
     public void shouldReleaseLockWhenExceptionInMigration() throws Exception
     {
@@ -190,12 +186,12 @@ public class MongoMigrationTest extends AbstractMigrationTest
     }
 
 
-    @Test(expected = MigrationConfigurationException.class)
-    public void shouldThrowAnExceptionIfNoDbNameSet() throws Exception
+    @Test
+    public void shouldThrowAnExceptionIfNoDbNameSet()
     {
         MongoMigration runner = new MongoMigration(new MongoClientURI("mongodb://localhost:27017/"));
         runner.setEnabled(true);
         runner.setMigrationScanPackage(V_1__migrations.class.getPackage().getName());
-        runner.execute();
+        assertThrows(MigrationConfigurationException.class, runner::execute);
     }
 }

@@ -5,14 +5,11 @@ import com.github.migmong.migration.MigrationContext;
 import com.github.migmong.migration.annotations.Migration;
 import com.github.migmong.migration.annotations.MigrationUnit;
 
-/**
- *
- * @author lstolowski
- * @since 27/07/2014
- */
+
 @Migration
 public class V_1__migrations
 {
+
     @MigrationUnit(id = 1)
     public void testMigration1(MigrationContext context)
     {
@@ -39,4 +36,5 @@ public class V_1__migrations
     {
         System.out.println("invoked 4");
     }
+
 }

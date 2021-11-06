@@ -22,26 +22,8 @@ With Maven
 </dependency>
 ```
 
-
-### Usage with Spring
-
-You need to instantiate `MongoMigration` object and provide some configuration.
-If you use Spring can be instantiated as a singleton bean in the Spring context. 
-In this case the migration process will be executed automatically on startup.
-
-```java
-@Bean
-public MongoMigration mongoMigration()
-{
-    MongoMigration migration = new MongoMigration(host, port, name, user, password);
-    migration.setMigrationScanPackage("com.foo.database.migrations");
-    return migration;
-}
-```
-
-
-### Usage without Spring
-Using **migmong** without a spring context has similar configuration but you have to remember to run `execute()` method to start a migrationInfo process.
+### Usage 
+You need to instantiate `MongoMigration` object and provide some configuration. Don't forget to run `execute()` method to start a migrationInfo process.
 
 ```java
 MongoMigration migration = new MongoMigration(host, port, name, user, password);
@@ -54,10 +36,7 @@ Above examples provide minimal configuration. `MongoMigration` object provides s
 ```java
 migration.setMigrationCollectionName("migrationLog");   // collection with applied change sets
 migration.setMigrationNamePrefix("V_");                 // prefix of names of all migrations, default is 'V'
-migration.setApplicationContext(context);               // instance of Spring application context to get your beans
-migration.setMongoTemplate(mongoTemplate);              // instance of Spring MongoTemplate
-migration.setSpringEnvironment(environment);            // instance of Spring Environment
-migration.setCustomVariable(name, variable);            // any variable you want to have during the migration process
+migration.setMigrationVariable("foo", "bar");           // any variable you want to have during the migration process (e.g. spring context)
 migration.setEnabled(true);                             // default is true, migrationInfo won't start if set to false
 ```
 
@@ -85,7 +64,7 @@ public class V0_1_0__migrateMyStuff
     public void makeMyBigChanges(MigrationContext context)
     {
         // get your information that was put into the migration context
-        MyBean myBean = context.getApplicationContext().getBean(MyBean.class);
+        String variable = (String)context.getVariable("foo");
         ...
         // do some stuff
         ... 
@@ -160,10 +139,6 @@ To use it within your project you can include it as .jar file and add in pom.xml
     <scope>system</scope>
     <systemPath>${project.basedir}/src/main/resources/migmong.jar</systemPath>
     <exclusions>
-        <exclusion>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </exclusion>
         <exclusion>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>

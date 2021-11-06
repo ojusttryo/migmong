@@ -2,16 +2,10 @@ package com.github.migmong;
 
 import static com.mongodb.ServerAddress.defaultHost;
 import static com.mongodb.ServerAddress.defaultPort;
-import static org.springframework.util.StringUtils.hasText;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
-
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.context.ApplicationContext;
-import org.springframework.core.env.Environment;
-import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.github.migmong.dao.ChangeEntryDao;
 import com.github.migmong.exception.MigrationConfigurationException;
@@ -23,6 +17,7 @@ import com.github.migmong.migration.MigrationEntry;
 import com.github.migmong.migration.MigrationInfo;
 import com.github.migmong.migration.annotations.Migration;
 import com.github.migmong.utils.MigrationService;
+import com.google.common.base.Strings;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
@@ -30,7 +25,6 @@ import com.mongodb.MongoCredential;
 import com.mongodb.ReadConcern;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
-import com.mongodb.client.MongoDatabase;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  * Mongo migration entry point
  */
 @Slf4j
-public class MongoMigration implements InitializingBean
+public class MongoMigration
 {
     private static final String DEFAULT_MIGRATION_COLLECTION_NAME = "migrationLog";
     private static final String DEFAULT_LOCK_COLLECTION_NAME = "migrationLock";
@@ -47,7 +41,7 @@ public class MongoMigration implements InitializingBean
     private static final long DEFAULT_MIGRATION_LOCK_POLL_RATE = 10L;
     private static final boolean DEFAULT_THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK = false;
 
-    private ChangeEntryDao dao;
+    private final ChangeEntryDao dao;
 
     private boolean enabled = true;
     private String migrationScanPackage;
@@ -55,7 +49,7 @@ public class MongoMigration implements InitializingBean
     private String dbName;
 
     private MongoClient mongoClient;
-    private MigrationContext migrationContext = new MigrationContext();
+    private final MigrationContext migrationContext = new MigrationContext();
     private String migrationPrefix = "V";
 
 
@@ -144,16 +138,6 @@ public class MongoMigration implements InitializingBean
                 .build();
         mongoClient = new MongoClient(address, credential, options);
         this.dao = createDao();
-    }
-
-
-    /**
-     * For Spring users: executing migration after bean is created in the Spring context
-     */
-    @Override
-    public void afterPropertiesSet() throws Exception
-    {
-        execute();
     }
 
 
@@ -323,44 +307,11 @@ public class MongoMigration implements InitializingBean
 
 
     /**
-     * Sets pre-configured {@link MongoTemplate} instance to use in migration
-     * @param mongoTemplate instance of the {@link MongoTemplate}
-     */
-    public MongoMigration setMongoTemplate(MongoTemplate mongoTemplate)
-    {
-        migrationContext.setMongoTemplate(mongoTemplate);
-        return this;
-    }
-
-
-    /**
-     * Set Spring's {@link Environment} object to use in migration
-     * @param environment {@link Environment} object
-     */
-    public MongoMigration setSpringEnvironment(Environment environment)
-    {
-        migrationContext.setSpringEnvironment(environment);
-        return this;
-    }
-
-
-    /**
-     * Sets Spring's {@link ApplicationContext} object to use in migration
-     * @param applicationContext application context
-     */
-    public MongoMigration setApplicationContext(ApplicationContext applicationContext)
-    {
-        migrationContext.setApplicationContext(applicationContext);
-        return this;
-    }
-
-
-    /**
-     * Sets custom variable to use in migration
+     * Adds custom variable to use in migration.
      * @param name variable name
      * @param variable variable
      */
-    public MongoMigration setCustomVariable(String name, Object variable)
+    public MongoMigration setMigrationVariable(String name, Object variable)
     {
         migrationContext.setVariable(name, variable);
         return this;
@@ -408,23 +359,25 @@ public class MongoMigration implements InitializingBean
                     {
                         if (dao.isNewMigrationUnit(migrationEntry))
                         {
-                            executeMigrationUnit(migrationUnit, migrationInstance, dao.getMongoDatabase());
+                            log.info("Executing new migration " + migrationEntry);
+                            executeMigrationUnit(migrationUnit, migrationInstance);
                             dao.save(migrationEntry);
-                            log.info(migrationEntry + " applied");
+                            log.info("Applied migration " + migrationEntry);
                         }
                         else if (service.isAlwaysRunnableMigration(migrationUnit))
                         {
-                            executeMigrationUnit(migrationUnit, migrationInstance, dao.getMongoDatabase());
-                            log.info(migrationEntry + " applied");
+                            log.info("Executing always runnable migration " + migrationEntry);
+                            executeMigrationUnit(migrationUnit, migrationInstance);
+                            log.info("Applied migration " + migrationEntry);
                         }
                         else
                         {
-                            log.debug(migrationEntry + " passed over");
+                            log.debug("Skipping migration " + migrationEntry);
                         }
                     }
                     catch (Exception e)
                     {
-                        log.error(e.getMessage());
+                        log.error(e.getMessage(), e);
                     }
                 }
             }
@@ -440,22 +393,21 @@ public class MongoMigration implements InitializingBean
     }
 
 
-    private Object executeMigrationUnit(Method migrationUnit, Object migration, MongoDatabase mongoDatabase)
+    private Object executeMigrationUnit(Method migrationUnit, Object migration)
             throws IllegalAccessException, InvocationTargetException
     {
-        migrationContext.setMongoDatabase(mongoDatabase);
         return migrationUnit.invoke(migration, migrationContext);
     }
 
 
     private void validateConfig() throws MigrationConfigurationException
     {
-        if (!hasText(dbName))
+        if (Strings.isNullOrEmpty(dbName))
         {
             throw new MigrationConfigurationException(
                     "DB name is not set. It should be defined in MongoDB URI or via setter");
         }
-        if (!hasText(migrationScanPackage))
+        if (Strings.isNullOrEmpty(migrationScanPackage))
         {
             throw new MigrationConfigurationException("Scan package for migrations is not set: use appropriate setter");
         }
@@ -464,9 +416,12 @@ public class MongoMigration implements InitializingBean
 
     private ChangeEntryDao createDao()
     {
-        return new ChangeEntryDao(DEFAULT_MIGRATION_COLLECTION_NAME, DEFAULT_LOCK_COLLECTION_NAME,
-                DEFAULT_WAIT_FOR_LOCK,
-                DEFAULT_MIGRATION_LOCK_WAIT_TIME, DEFAULT_MIGRATION_LOCK_POLL_RATE,
-                DEFAULT_THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK);
+        return new ChangeEntryDao(
+            DEFAULT_MIGRATION_COLLECTION_NAME,
+            DEFAULT_LOCK_COLLECTION_NAME,
+            DEFAULT_WAIT_FOR_LOCK,
+            DEFAULT_MIGRATION_LOCK_WAIT_TIME,
+            DEFAULT_MIGRATION_LOCK_POLL_RATE,
+            DEFAULT_THROW_EXCEPTION_IF_CANNOT_OBTAIN_LOCK);
     }
 }

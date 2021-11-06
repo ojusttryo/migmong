@@ -1,7 +1,5 @@
 package com.github.migmong.dao;
 
-import static org.springframework.util.StringUtils.hasText;
-
 import java.util.Date;
 
 import org.bson.Document;
@@ -10,6 +8,7 @@ import com.github.migmong.exception.MigrationConfigurationException;
 import com.github.migmong.exception.MigrationConnectionException;
 import com.github.migmong.exception.MigrationLockException;
 import com.github.migmong.migration.MigrationEntry;
+import com.google.common.base.Strings;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
@@ -36,8 +35,13 @@ public class ChangeEntryDao
     private LockDao lockDao;
 
 
-    public ChangeEntryDao(String migrationCollectionName, String lockCollectionName, boolean waitForLock,
-            long migrationLockWaitTime, long migrationLockPollRate, boolean throwExceptionIfCannotObtainLock)
+    public ChangeEntryDao(
+        String migrationCollectionName,
+        String lockCollectionName,
+        boolean waitForLock,
+        long migrationLockWaitTime,
+        long migrationLockPollRate,
+        boolean throwExceptionIfCannotObtainLock)
     {
         this.indexDao = new ChangeEntryIndexDao(migrationCollectionName);
         this.lockDao = new LockDao(lockCollectionName);
@@ -100,7 +104,7 @@ public class ChangeEntryDao
 
     public MongoDatabase connectMongoDb(MongoClient mongo, String dbName) throws MigrationConfigurationException
     {
-        if (!hasText(dbName))
+        if (Strings.isNullOrEmpty(dbName))
             throw new MigrationConfigurationException("Database name is not set");
 
         this.mongoClient = mongo;
@@ -116,7 +120,7 @@ public class ChangeEntryDao
     {
 
         final MongoClient mongoClient = new MongoClient(mongoClientURI);
-        final String database = (!hasText(dbName)) ? mongoClientURI.getDatabase() : dbName;
+        final String database = (Strings.isNullOrEmpty(dbName)) ? mongoClientURI.getDatabase() : dbName;
 
         return this.connectMongoDb(mongoClient, database);
     }
