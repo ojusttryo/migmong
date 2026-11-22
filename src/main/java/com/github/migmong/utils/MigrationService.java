@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
+import org.reflections.util.ConfigurationBuilder;
 
 import com.github.migmong.exception.MigrationUnitException;
 import com.github.migmong.migration.MigrationInfo;
@@ -52,7 +54,9 @@ public class MigrationService
 
     public List<MigrationInfo> fetchMigrations(String prefix) throws MigrationException
     {
-        Reflections reflections = new Reflections(migrationsBasePackage);
+        Reflections reflections = new Reflections(new ConfigurationBuilder()
+                .forPackages(migrationsBasePackage)
+                .setScanners(Scanners.TypesAnnotated));
         List<MigrationInfo> migrations = new ArrayList<>();
         List<Class<?>> migrationClasses = new ArrayList<>(reflections.getTypesAnnotatedWith(Migration.class));
         for (Class<?> migrationClass : migrationClasses)

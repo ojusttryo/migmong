@@ -1,16 +1,17 @@
 package com.github.migmong.dao;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.bson.Document;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.github.migmong.AbstractMigrationTest;
 import com.github.migmong.common.Constants;
@@ -137,7 +138,7 @@ public class MigrationEntryDaoTest extends AbstractMigrationTest
     }
 
 
-    @Test(expected = MigrationLockException.class)
+    @Test
     public void shouldThrowLockExceptionIfThrowExceptionIsTrue() throws Exception
     {
         MongoClient mongoClient = mock(MongoClient.class);
@@ -152,9 +153,8 @@ public class MigrationEntryDaoTest extends AbstractMigrationTest
         dao.setLockDao(lockDao);
 
         dao.connectMongoDb(mongoClient, Constants.TEST_DB_NAME);
-        boolean hasLock = dao.acquireProcessLock();
 
-        assertFalse(hasLock);
+        assertThrows(MigrationLockException.class, () -> dao.acquireProcessLock());
     }
 
 

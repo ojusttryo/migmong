@@ -1,12 +1,14 @@
 package com.github.migmong.utils;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.github.migmong.migrations.V_0_9__anotherMigrations;
 import com.github.migmong.migrations.V_1__migrations;
@@ -15,8 +17,6 @@ import com.github.migmong.exception.MigrationUnitException;
 import com.github.migmong.migration.MigrationEntry;
 import com.github.migmong.migration.MigrationInfo;
 import com.github.migmong.migrationWithDuplicates.V_0_1_5__withDuplicates;
-
-import junit.framework.Assert;
 
 /**
  *
@@ -36,20 +36,22 @@ public class MigrationServiceTest
         {
             MigrationEntry entry = service.createMigrationEntry(foundMethod);
 
-            Assert.assertEquals(V_1__migrations.class.getSimpleName(), entry.getMigrationClass());
-            Assert.assertNotNull(entry.getTimestamp());
-            Assert.assertNotNull(entry.getChangeId());
-            Assert.assertNotNull(entry.getMigrationUnit());
+            assertEquals(V_1__migrations.class.getSimpleName(), entry.getMigrationClass());
+            assertNotNull(entry.getTimestamp());
+            assertNotNull(entry.getChangeId());
+            assertNotNull(entry.getMigrationUnit());
         }
     }
 
 
-    @Test(expected = MigrationUnitException.class)
-    public void shouldFailOnDuplicatedMigrationUnits() throws MigrationUnitException
+    @Test
+    public void shouldFailOnDuplicatedMigrationUnits() throws MigrationException
     {
         String scanPackage = V_0_1_5__withDuplicates.class.getPackage().getName();
         MigrationService service = new MigrationService(scanPackage);
-        service.fetchMigrationUnits(V_0_1_5__withDuplicates.class);
+
+        assertThrows(MigrationUnitException.class,
+                () -> service.fetchMigrationUnits(V_0_1_5__withDuplicates.class));
     }
 
 

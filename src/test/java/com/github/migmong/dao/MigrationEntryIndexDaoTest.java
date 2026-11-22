@@ -1,15 +1,15 @@
 package com.github.migmong.dao;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.bson.Document;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.github.migmong.AbstractMigrationTest;
@@ -47,7 +47,7 @@ public class MigrationEntryIndexDaoTest extends AbstractMigrationTest
 
 
     @Test
-    @Ignore("Fongo has not implemented dropIndex for MongoCollection object (issue with mongo driver 3.x)")
+    @Disabled("Fongo has not implemented dropIndex for MongoCollection object (issue with mongo driver 3.x)")
     public void shouldDropWrongIndex()
     {
         MongoClient mongo = mock(MongoClient.class);
