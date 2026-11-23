@@ -63,7 +63,7 @@
 
 		<junit-jupiter.version>5.11.4</junit-jupiter.version>
 		<mockito.version>5.11.0</mockito.version>
-		<mongo-java-server.version>1.47.0</mongo-java-server.version>
+		<testcontainers.version>1.21.4</testcontainers.version>
 	</properties>
 
 	<dependencies>
@@ -114,9 +114,9 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>de.bwaldvogel</groupId>
-			<artifactId>mongo-java-server</artifactId>
-			<version>${mongo-java-server.version}</version>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mongodb</artifactId>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
