@@ -3,9 +3,12 @@ package com.github.migmong;
 import static com.github.migmong.common.Constants.TEST_DB_NAME;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
-import com.mongodb.MongoClient;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 
 import de.bwaldvogel.mongo.MongoServer;
@@ -17,7 +20,10 @@ public abstract class AbstractMigrationTest
     {
         MongoServer mongoServer = new MongoServer(new MemoryBackend());
         InetSocketAddress serverAddress = mongoServer.bind();
-        MongoClient client = new MongoClient(new ServerAddress(serverAddress));
+        MongoClientSettings settings = MongoClientSettings.builder()
+                .applyToClusterSettings(builder -> builder.hosts(List.of(new ServerAddress(serverAddress))))
+                .build();
+        MongoClient client = MongoClients.create(settings);
         MongoDatabase db = client.getDatabase(TEST_DB_NAME);
         return db;
     }

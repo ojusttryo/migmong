@@ -18,13 +18,14 @@ import com.github.migmong.migration.MigrationInfo;
 import com.github.migmong.migration.annotations.Migration;
 import com.github.migmong.utils.MigrationService;
 import com.google.common.base.Strings;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.MongoClientURI;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCredential;
 import com.mongodb.ReadConcern;
 import com.mongodb.ServerAddress;
 import com.mongodb.WriteConcern;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +46,7 @@ public class MongoMigration
 
     private boolean enabled = true;
     private String migrationScanPackage;
-    private MongoClientURI mongoClientURI;
+    private ConnectionString connectionString;
     private String dbName;
 
     private MongoClient mongoClient;
@@ -60,18 +61,18 @@ public class MongoMigration
      */
     public MongoMigration()
     {
-        this(new MongoClientURI("mongodb://" + defaultHost() + ":" + defaultPort() + "/"));
+        this(new ConnectionString("mongodb://" + defaultHost() + ":" + defaultPort() + "/"));
     }
 
 
     /**
-     * Constructor takes {@link MongoClientURI} object as a parameter.
-     * @param mongoClientURI URI for the database
+     * Constructor takes {@link ConnectionString} object as a parameter.
+     * @param connectionString connection string for the database
      */
-    public MongoMigration(MongoClientURI mongoClientURI)
+    public MongoMigration(ConnectionString connectionString)
     {
-        this.mongoClientURI = mongoClientURI;
-        this.setDbName(mongoClientURI.getDatabase());
+        this.connectionString = connectionString;
+        this.setDbName(connectionString.getDatabase());
         this.dao = createDao();
     }
 
@@ -88,7 +89,7 @@ public class MongoMigration
 
 
     /**
-     * Constructor takes correct uri string for {@link MongoClientURI}
+     * Constructor takes correct uri string for {@link ConnectionString}
      * <p>The format of the URI is:
      * <pre>
      * mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]]
@@ -108,13 +109,13 @@ public class MongoMigration
      * <b>MongoMigration will operate on the database provided here or on the database overriden by setter setDbName(String)
      * .</b>
      * </li>
-     * <li>{@code ?options} are connection options. For list of options please see com.mongodb.MongoClientURI docs</li>
+     * <li>{@code ?options} are connection options. For list of options please see com.mongodb.ConnectionString docs</li>
      * </ul>
      * @param mongoURI with correct format
      */
     public MongoMigration(String mongoURI)
     {
-        this(new MongoClientURI(mongoURI));
+        this(new ConnectionString(mongoURI));
     }
 
 
@@ -131,12 +132,14 @@ public class MongoMigration
         this.dbName = dbName;
         MongoCredential credential = MongoCredential.createCredential(user, dbName, password.toCharArray());
         ServerAddress address = new ServerAddress(host, port);
-        MongoClientOptions options = MongoClientOptions
+        MongoClientSettings settings = MongoClientSettings
                 .builder()
+                .applyToClusterSettings(builder -> builder.hosts(List.of(address)))
+                .credential(credential)
                 .writeConcern(WriteConcern.ACKNOWLEDGED)
                 .readConcern(ReadConcern.LOCAL)
                 .build();
-        mongoClient = new MongoClient(address, credential, options);
+        mongoClient = MongoClients.create(settings);
         this.dao = createDao();
     }
 
@@ -168,7 +171,7 @@ public class MongoMigration
         if (this.mongoClient != null)
             dao.connectMongoDb(this.mongoClient, dbName);
         else
-            dao.connectMongoDb(this.mongoClientURI, dbName);
+            dao.connectMongoDb(this.connectionString, dbName);
 
         if (!dao.acquireProcessLock())
         {

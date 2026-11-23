@@ -15,7 +15,7 @@ import org.mockito.Mockito;
 import com.github.migmong.AbstractMigrationTest;
 import com.github.migmong.common.Constants;
 import com.github.migmong.migration.MigrationEntry;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;

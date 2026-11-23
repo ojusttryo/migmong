@@ -28,7 +28,7 @@ import com.github.migmong.exception.MigrationConfigurationException;
 import com.github.migmong.exception.MigrationConnectionException;
 import com.github.migmong.migration.MigrationEntry;
 import com.github.migmong.migrations.V_1__migrations;
-import com.mongodb.MongoClientURI;
+import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoDatabase;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,7 +52,7 @@ public class MongoMigrationTest extends AbstractMigrationTest
         fakeMongoDatabase = prepareFakeDatabase();
         fakeMongoDatabase.getCollection(TEST_MIGRATION_COLLECTION).drop();
 
-        when(dao.connectMongoDb(any(MongoClientURI.class), anyString())).thenReturn(fakeMongoDatabase);
+        when(dao.connectMongoDb(any(ConnectionString.class), anyString())).thenReturn(fakeMongoDatabase);
         when(dao.getMongoDatabase()).thenReturn(fakeMongoDatabase);
 
         doCallRealMethod().when(dao).save(any(MigrationEntry.class));
@@ -189,7 +189,7 @@ public class MongoMigrationTest extends AbstractMigrationTest
     @Test
     public void shouldThrowAnExceptionIfNoDbNameSet()
     {
-        MongoMigration runner = new MongoMigration(new MongoClientURI("mongodb://localhost:27017/"));
+        MongoMigration runner = new MongoMigration(new ConnectionString("mongodb://localhost:27017/"));
         runner.setEnabled(true);
         runner.setMigrationScanPackage(V_1__migrations.class.getPackage().getName());
         assertThrows(MigrationConfigurationException.class, runner::execute);

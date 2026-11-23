@@ -17,7 +17,7 @@ import com.github.migmong.AbstractMigrationTest;
 import com.github.migmong.common.Constants;
 import com.github.migmong.exception.MigrationLockException;
 import com.github.migmong.exception.MigrationConfigurationException;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 
 /**

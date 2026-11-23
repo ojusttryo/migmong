@@ -9,8 +9,9 @@ import com.github.migmong.exception.MigrationConnectionException;
 import com.github.migmong.exception.MigrationLockException;
 import com.github.migmong.migration.MigrationEntry;
 import com.google.common.base.Strings;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
+import com.mongodb.ConnectionString;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
@@ -115,12 +116,12 @@ public class ChangeEntryDao
     }
 
 
-    public MongoDatabase connectMongoDb(MongoClientURI mongoClientURI, String dbName)
+    public MongoDatabase connectMongoDb(ConnectionString connectionString, String dbName)
             throws MigrationConfigurationException
     {
 
-        final MongoClient mongoClient = new MongoClient(mongoClientURI);
-        final String database = (Strings.isNullOrEmpty(dbName)) ? mongoClientURI.getDatabase() : dbName;
+        final MongoClient mongoClient = MongoClients.create(connectionString);
+        final String database = (Strings.isNullOrEmpty(dbName)) ? connectionString.getDatabase() : dbName;
 
         return this.connectMongoDb(mongoClient, database);
     }
